@@ -1,0 +1,31 @@
+# FlowCore Configuration
+
+browser:
+  headless: true
+  timeout: 30000
+  viewport:
+    width: 1920
+    height: 1080
+  
+fingerprint:
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+  locales: ["en-US", "en-GB", "id-ID"]
+  timezones: ["Asia/Jakarta", "Asia/Singapore", "America/New_York"]
+
+proxy:
+  pool_size: 50
+  health_check_url: "https://httpbin.org/ip"
+  timeout: 10
+  sources:
+    - url: "https://raw.githubusercontent.com/databay-labs/free-proxy-list/master/http.txt"
+      type: "http"
+    - url: "https://raw.githubusercontent.com/r00tee/Proxy-List/main/Https.txt"
+      type: "https"
+
+registrar:
+  default_delay: 1.5
+  submit_timeout: 15
+  retry_on_block: true
+  retry_count: 3
