@@ -2,7 +2,7 @@
   "jobs": [
     {
       "id": "c467b0c54aa3",
-      "name": "🚨 FBI Watchdog",
+      "name": "\ud83d\udea8 FBI Watchdog",
       "prompt": "",
       "skills": [],
       "skill": null,
@@ -20,23 +20,23 @@
       "schedule_display": "every 360m",
       "repeat": {
         "times": null,
-        "completed": 3
+        "completed": 7
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-06-15T17:30:11.565570+00:00",
-      "next_run_at": "2026-06-16T00:29:14.677702+00:00",
-      "last_run_at": "2026-06-15T18:29:14.677702+00:00",
+      "next_run_at": "2026-06-17T07:29:50.539895+07:00",
+      "last_run_at": "2026-06-17T01:29:50.539895+07:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
-      "deliver": "telegram:-1004354643360:344",
+      "deliver": "telegram:-1003534226714",
       "origin": {
         "platform": "telegram",
         "chat_id": "5695981991",
-        "chat_name": "Try to be a rich | Harder 🗣️",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
         "thread_id": null
       },
       "enabled_toolsets": null,
@@ -44,7 +44,7 @@
     },
     {
       "id": "4aafc5a74264",
-      "name": "📊 FBI Daily Briefing",
+      "name": "\ud83d\udcca FBI Daily Briefing",
       "prompt": "",
       "skills": [],
       "skill": null,
@@ -62,19 +62,19 @@
       "schedule_display": "0 16 * * *",
       "repeat": {
         "times": null,
-        "completed": 1
+        "completed": 2
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-06-15T18:34:16.482607+00:00",
-      "next_run_at": "2026-06-16T16:00:00+00:00",
-      "last_run_at": "2026-06-15T18:35:13.817248+00:00",
+      "next_run_at": "2026-06-17T16:00:00+07:00",
+      "last_run_at": "2026-06-16T23:28:30.311609+07:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
-      "deliver": "telegram:-1004354643360:344",
+      "deliver": "telegram:-1003534226714",
       "origin": {
         "platform": "telegram",
         "chat_id": "-1004354643360",
@@ -86,7 +86,7 @@
     },
     {
       "id": "622122a19dd8",
-      "name": "🧹 Hermes Session Prune",
+      "name": "\ud83e\uddf9 Hermes Session Prune",
       "prompt": "",
       "skills": [],
       "skill": null,
@@ -120,7 +120,7 @@
       "origin": {
         "platform": "telegram",
         "chat_id": "5695981991",
-        "chat_name": "Try to be a rich | Harder 🗣️",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
         "thread_id": null
       },
       "enabled_toolsets": null,
@@ -128,15 +128,15 @@
     },
     {
       "id": "2938df6af833",
-      "name": "💰 Income Pipeline Monitor",
-      "prompt": "Run the income pipeline monitor script. Execute the script with python3 ~/.hermes/scripts/income_pipeline.py and report the most promising income opportunities found. Focus on: 1) any freelance gigs that pay in USD/PayPal 2) any crypto testnet/airdrop opportunities 3) any quick money tasks. If nothing new, just report \"No new leads.\"",
+      "name": "\ud83d\udcb0 Income Pipeline Monitor",
+      "prompt": "Run the income pipeline monitor script.",
       "skills": [],
       "skill": null,
       "model": null,
       "provider": null,
       "base_url": null,
       "script": "income_pipeline.py",
-      "no_agent": false,
+      "no_agent": true,
       "context_from": null,
       "schedule": {
         "kind": "interval",
@@ -146,23 +146,23 @@
       "schedule_display": "every 360m",
       "repeat": {
         "times": null,
-        "completed": 0
+        "completed": 4
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-06-15T19:32:50.121731+00:00",
-      "next_run_at": "2026-06-16T01:32:50.121761+00:00",
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
+      "next_run_at": "2026-06-17T08:39:50.721682+07:00",
+      "last_run_at": "2026-06-17T02:39:50.721682+07:00",
+      "last_status": "error",
+      "last_error": "Script exited with code 1\nstderr:\nTraceback (most recent call last):\n  File \"/home/hermes/.hermes/scripts/income_pipeline.py\", line 10, in <module>\n    sys.path.insert(0, os.path.join(os.path.dirname(__file__), \"lib\"))\n    ^^^\nNameError: name 'sys' is not defined",
       "last_delivery_error": null,
-      "deliver": "origin",
+      "deliver": "telegram:-1003534226714",
       "origin": {
         "platform": "telegram",
         "chat_id": "5695981991",
-        "chat_name": "Try to be a rich | Harder 🗣️",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
         "thread_id": null
       },
       "enabled_toolsets": null,
@@ -170,7 +170,7 @@
     },
     {
       "id": "4d163acf64e7",
-      "name": "🔁 Proxy Auto-Updater",
+      "name": "\ud83d\udd01 Proxy Auto-Updater",
       "prompt": "Run the proxy updater script to refresh free proxy list.",
       "skills": [],
       "skill": null,
@@ -188,14 +188,56 @@
       "schedule_display": "every 360m",
       "repeat": {
         "times": null,
-        "completed": 0
+        "completed": 3
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-06-15T19:46:40.350564+00:00",
-      "next_run_at": "2026-06-16T01:46:40.350592+00:00",
+      "next_run_at": "2026-06-17T02:57:48.692902+07:00",
+      "last_run_at": "2026-06-16T20:57:48.692902+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "5695981991",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
+        "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "eab49bd90317",
+      "name": "\ud83d\udce6 VPS Weekly Backup",
+      "prompt": "Run the VPS backup script to create a weekly backup of Hermes config and projects.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "vps_backup.sh",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 2 * * 0",
+        "display": "0 2 * * 0"
+      },
+      "schedule_display": "0 2 * * 0",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T00:14:08.069810+00:00",
+      "next_run_at": "2026-06-21T02:00:00+00:00",
       "last_run_at": null,
       "last_status": null,
       "last_error": null,
@@ -204,12 +246,264 @@
       "origin": {
         "platform": "telegram",
         "chat_id": "5695981991",
-        "chat_name": "Try to be a rich | Harder 🗣️",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
         "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "ed2bf23b2327",
+      "name": "\ud83d\udcbe Disk Usage Watchdog",
+      "prompt": "Check disk usage and swap status. Silent when clear, warns when >80%.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "disk_alert.sh",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": null,
+        "completed": 3
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T00:14:09.072877+00:00",
+      "next_run_at": "2026-06-17T07:14:50.599392+07:00",
+      "last_run_at": "2026-06-17T01:14:50.599392+07:00",
+      "last_status": "error",
+      "last_error": "Script exited with code 1\nstderr:\nTraceback (most recent call last):\n  File \"<stdin>\", line 3, in <module>\nNameError: name 'sys' is not defined. Did you forget to import 'sys'?\nstdout:\n\u2705 **\ud83d\udcc0 Disk Monitor**\n\n\u2705 Disk 35% (13399756/41150640)\n\u2705 Swap aktif \u2705\n\u2705 ZRAM 10MB (16MB terpakai)\n\n\ud83d\udd50 Wed 17 Jun 01:14",
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "5695981991",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
+        "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "ec3b3fa737b6",
+      "name": "Context Monitor",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "context_monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 60,
+        "display": "every 60m"
+      },
+      "schedule_display": "every 60m",
+      "repeat": {
+        "times": 9999,
+        "completed": 6
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T21:34:08.641190+07:00",
+      "next_run_at": "2026-06-17T03:36:50.791700+07:00",
+      "last_run_at": "2026-06-17T02:36:50.791700+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "168719d753b2",
+      "name": "\ud83d\udeaa SSH Attack Monitor",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "ssh_attack_monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": 9999,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T21:54:18.361508+07:00",
+      "next_run_at": "2026-06-17T03:54:18.361534+07:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "f06e93ef53de",
+      "name": "\ud83d\udd01 Reboot Monitor",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "reboot_monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 15,
+        "display": "every 15m"
+      },
+      "schedule_display": "every 15m",
+      "repeat": {
+        "times": 9999,
+        "completed": 19
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T21:54:19.364117+07:00",
+      "next_run_at": "2026-06-17T02:50:50.790676+07:00",
+      "last_run_at": "2026-06-17T02:35:50.790676+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "c40ee1d3dfda",
+      "name": "\ud83d\udcc8 Memory Pressure Monitor",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "memory_monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 60,
+        "display": "every 60m"
+      },
+      "schedule_display": "every 60m",
+      "repeat": {
+        "times": 9999,
+        "completed": 3
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T21:54:20.367411+07:00",
+      "next_run_at": "2026-06-17T03:29:50.750087+07:00",
+      "last_run_at": "2026-06-17T02:29:50.750087+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "304c9a03f330",
+      "name": "\ud83d\udccb Error Log Summary",
+      "prompt": "Run the error summary reporter to check accumulated errors from all monitor scripts.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "error_summary.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T23:51:31.573274+07:00",
+      "next_run_at": "2026-06-17T05:51:31.573298+07:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
       },
       "enabled_toolsets": null,
       "workdir": null
     }
   ],
-  "updated_at": "2026-06-15T19:46:40.350868+00:00"
+  "updated_at": "2026-06-17T02:39:50.721820+07:00"
 }

@@ -1,132 +1,180 @@
 #!/usr/bin/env python3
-"""
-📡 FBI Watchdog — Server Emergency Monitor
-Silent when all clear. Reports issues with recommendations.
-Thresholds calculated based on 2c/2GB/40GB VPS specs.
-"""
+"""📡 SysWatch — ngasih tau kalo VPS bermasalah (RAM, disk, CPU)."""
 import os
 import subprocess
+import sys
 from datetime import datetime
 
-HOME = os.path.expanduser("~")
-HERMES_DIR = os.path.join(HOME, ".hermes")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
+from error_log import ErrorLog
+
+log = ErrorLog("📡 SysWatch")
 WIB = datetime.now().strftime("%Y-%m-%d %H:%M WIB")
 
 
-def run(cmd):
+def run(cmd, timeout=15):
     try:
-        r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=15)
-        return r.stdout.strip()
-    except:
-        return ""
+        r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+        return r.stdout.strip(), r.returncode == 0
+    except subprocess.TimeoutExpired:
+        log.warning("Perintah lambat", f"`{cmd[:50]}...` gak selesai", "Coba ulang manual")
+        return "", False
+    except FileNotFoundError:
+        log.error("Perintah gak ditemukan", f"`{cmd.split()[0]}` gak ada", "Cek PATH / install")
+        return "", False
+    except OSError as e:
+        log.error("Gagal jalanin perintah", f"Error: {e}", "Cek permissions / disk")
+        return "", False
 
 
 def bar(pct, w=8):
-    """Compact progress bar."""
     f = round(min(pct, 100) / 100 * w)
     return "█" * f + "░" * (w - f)
 
 
-def ram_calc(pct, total_gb):
-    """Return (emoji, zone_label, recommendation) based on RAM %."""
-    if pct >= 92:
-        return ("💀", "KRITIS", f"Segera matikan service ga penting. Sisa {((100-pct)/100*total_gb):.1f}GB — OOM dalam hitungan menit!")
-    if pct >= 82:
-        return ("🔴", "BAHAYA", f"Bersihin cache: `sync && echo 3 > /proc/sys/vm/drop_caches`. Sisa {((100-pct)/100*total_gb):.1f}GB.")
-    if pct >= 70:
-        return ("🟡", "WASPADA", f"Pantau terus. Kalo naik 5% lagi, restart Hermes dulu: `systemctl restart hermes`.")
-    return ("🟢", "AMAN", None)
-
-
-def disk_calc(pct, total_gb):
-    """Return (emoji, zone_label, recommendation) based on DISK %."""
-    if pct >= 93:
-        return ("💀", "KRITIS", f"Disk nyaris penuh! Hapus log: `journalctl --vacuum-size=500M`. Sisa {((100-pct)/100*total_gb):.1f}GB.")
-    if pct >= 88:
-        return ("🔴", "BAHAYA", f"Bersihin apt cache: `apt clean` & log lama: `find /var/log -name '*.gz' -delete`. Sisa {((100-pct)/100*total_gb):.1f}GB.")
-    if pct >= 78:
-        return ("🟡", "WASPADA", f"Growth rate ~200MB/minggu. Sisa {((100-pct)/100*total_gb):.1f}GB — {((100-pct)/5):.0f} minggu lagi penuh.")
-    return ("🟢", "AMAN", None)
-
-
-def cpu_calc(load_1min, cores):
-    """Return (emoji, zone_label, recommendation) based on CPU load."""
-    util_pct = (load_1min / cores) * 100
-    if util_pct >= 150:
-        return ("💀", "KRITIS", f"CPU overload {load_1min:.1f}/2c ({util_pct:.0f}%)! Cek proses: `htop`, matikan yg ga penting.")
-    if util_pct >= 100:
-        return ("🔴", "BAHAYA", f"CPU full! Load {load_1min:.1f} = 2 core penuh. Cek: `ps aux --sort=-%cpu | head -5`.")
-    if util_pct >= 70:
-        return ("🟡", "WASPADA", f"CPU tinggi {load_1min:.1f}/2c ({util_pct:.0f}%). Pantau, jangan spawn task baru.")
-    return ("🟢", "AMAN", None)
-
-
 def check():
+    lines = []
     alerts = []
     recs = []
-    wib = WIB
 
     # ── RAM ──
-    ram_pct_str = run("free | grep Mem | awk '{printf \"%.0f\", $3/$2 * 100}'")
-    ram_pct = int(ram_pct_str) if ram_pct_str.isdigit() else 0
-    ram_full = run("free -h | grep Mem:")
-    rp = ram_full.split()
-    ram_used = rp[2] if len(rp) > 2 else "?"
-    ram_total = rp[1] if len(rp) > 1 else "?"
-    ram_total_gb = float(ram_total.replace("Gi", "").replace("G", "").replace(",", ".")) if "G" in ram_total else 2.0
+    out, ok = run("free | grep Mem | awk '{printf \"%.0f\", $3/$2 * 100}'")
+    ram_data = {}
+    if not ok or not out or not out.isdigit():
+        log.error("Gagal baca RAM", "Perintah `free` error", "Cek `free -h` manual")
+    else:
+        ram_pct = int(out)
+        full, _ = run("free -h | grep Mem:")
+        parts = full.split()
+        ram_data = {"used": parts[2] if len(parts) > 2 else "?", "total": parts[1] if len(parts) > 1 else "?"}
 
-    ram_ico, ram_zone, ram_rec = ram_calc(ram_pct, ram_total_gb)
-    if ram_zone != "AMAN":
-        alerts.append(f"{ram_ico}{ram_zone} RAM {ram_pct}% ({ram_used}/{ram_total})")
-        alerts.append(f"`     `{bar(ram_pct)}")
-        if ram_rec:
-            recs.append(f"💾 RAM: {ram_rec}")
+        if ram_pct >= 92:
+            sisa = ((100 - ram_pct) / 100 * 2)
+            alerts.append(f"RAM")
+            alerts.append(f"• Pemakaian: {ram_pct}% ({ram_data['used']}/{ram_data['total']}) — KRITIS!")
+            alerts.append(f"• Dampak: Sisa cuma {sisa:.1f}GB — OOM kapan aja")
+            alerts.append(f"• Saran: Matikan program berat sekarang!")
+            log.critical("RAM mau habis", f"{ram_pct}% — sisa {sisa:.1f}GB", "Matikan program berat!")
+        elif ram_pct >= 82:
+            alerts.append(f"RAM")
+            alerts.append(f"• Pemakaian: {ram_pct}% ({ram_data['used']}/{ram_data['total']})")
+            alerts.append(f"• Dampak: Sistem mulai lemot")
+            alerts.append(f"• Saran: `sync && echo 3 > /proc/sys/vm/drop_caches`")
+            log.warning("RAM tinggi", f"{ram_pct}%", "Bersihin cache: sync && echo 3...")
+        elif ram_pct >= 70:
+            alerts.append(f"RAM")
+            alerts.append(f"• Pemakaian: {ram_pct}% ({ram_data['used']}/{ram_data['total']})")
+            alerts.append(f"• Saran: Pantau, restart Hermes kalo naik 5% lagi")
+            log.info("RAM waspada", f"{ram_pct}%")
 
     # ── DISK ──
-    disk = run("df -h / | tail -1")
-    dp = disk.split()
-    disk_used = dp[2] if len(dp) > 2 else "?"
-    disk_total = dp[1] if len(dp) > 1 else "?"
-    disk_pct_str = dp[4] if len(dp) > 4 else "?"
-    disk_pct_int = int(disk_pct_str.rstrip("%"))
-    disk_total_gb = float(disk_total.replace("G", "")) if "G" in disk_total else 40
+    out, ok = run("df -h / | tail -1")
+    disk_data = {}
+    if not ok or not out:
+        log.error("Gagal baca disk", "`df -h` error", "Cek manual")
+    else:
+        parts = out.split()
+        disk_data = {"used": parts[2] if len(parts) > 2 else "?", "total": parts[1] if len(parts) > 1 else "?"}
+        pct_str = parts[4] if len(parts) > 4 else "0%"
+        try:
+            disk_pct = int(pct_str.rstrip("%"))
+        except (ValueError, IndexError):
+            disk_pct = 0
 
-    dsk_ico, dsk_zone, dsk_rec = disk_calc(disk_pct_int, disk_total_gb)
-    if dsk_zone != "AMAN":
-        alerts.append(f"{dsk_ico}{dsk_zone} DISK {disk_pct_int}% ({disk_used}/{disk_total})")
-        alerts.append(f"`     `{bar(disk_pct_int)}")
-        if dsk_rec:
-            recs.append(f"💽 DISK: {dsk_rec}")
+        if disk_pct >= 93:
+            sisa = ((100 - disk_pct) / 100 * 40)
+            alerts.append(f"Disk")
+            alerts.append(f"• Pemakaian: {disk_pct}% ({disk_data['used']}/{disk_data['total']}) — KRITIS!")
+            alerts.append(f"• Dampak: Sisa cuma {sisa:.1f}GB")
+            alerts.append(f"• Saran: `journalctl --vacuum-size=500M`")
+            log.critical("Disk mau penuh", f"{disk_pct}% — sisa {sisa:.1f}GB", "Hapus log: journalctl...")
+        elif disk_pct >= 88:
+            alerts.append(f"Disk")
+            alerts.append(f"• Pemakaian: {disk_pct}% ({disk_data['used']}/{disk_data['total']})")
+            alerts.append(f"• Saran: `apt clean` & hapus file log")
+            log.warning("Disk hampir penuh", f"{disk_pct}%", "apt clean")
+        elif disk_pct >= 78:
+            alerts.append(f"Disk")
+            alerts.append(f"• Pemakaian: {disk_pct}% ({disk_data['used']}/{disk_data['total']})")
+            minggu = int((100 - disk_pct) / 5)
+            alerts.append(f"• Saran: Sisa ~{minggu} minggu — pantau")
+            log.info("Disk mulai penuh", f"{disk_pct}% — ~{minggu} minggu lagi")
 
     # ── CPU ──
-    cpu_load = run("uptime | grep -oP 'load average:.*' | cut -d: -f2").strip()
-    cpu_cores = int(run("nproc") or 2)
-    load_vals = [float(x) for x in cpu_load.replace(",", "").split() if x.replace(".", "").isdigit()]
-    load_1min = load_vals[0] if load_vals else 0
-
-    cpu_ico, cpu_zone, cpu_rec = cpu_calc(load_1min, cpu_cores)
-    if cpu_zone != "AMAN":
-        alerts.append(f"{cpu_ico}{cpu_zone} CPU load {cpu_load} ({cpu_cores}c)")
-        if cpu_rec:
-            recs.append(f"🧠 CPU: {cpu_rec}")
+    load_out, _ = run("uptime | grep -oP 'load average:.*' | cut -d: -f2")
+    cores_str, _ = run("nproc")
+    cores = int(cores_str) if cores_str and cores_str.isdigit() else 2
+    vals = [float(x) for x in load_out.replace(",", "").split() if x.replace(".", "").isdigit()]
+    cpu_data = {}
+    if not vals:
+        log.error("Gagal baca CPU", "Output uptime error", "Cek `uptime`")
+    else:
+        load = vals[0]
+        util = (load / cores) * 100
+        cpu_data["load"] = f"{load:.1f}/{cores}core"
+        if util >= 150:
+            alerts.append(f"CPU")
+            alerts.append(f"• Beban: {load:.1f}/{cores}core — OVERLOAD!")
+            alerts.append(f"• Dampak: VPS lemot banget")
+            alerts.append(f"• Saran: Cek `htop`, matikan yg gak penting")
+            log.critical("CPU overload", f"Load {load:.1f}/{cores}c", "Cek htop")
+        elif util >= 100:
+            alerts.append(f"CPU")
+            alerts.append(f"• Beban: {load:.1f}/{cores}core — penuh")
+            alerts.append(f"• Saran: `ps aux --sort=-%cpu | head -5`")
+            log.warning("CPU penuh", f"Load {load:.1f}/{cores}c", "Cek proses")
+        elif util >= 70:
+            log.info("CPU tinggi", f"Load {load:.1f}/{cores}c")
 
     # ── Output ──
-    if not alerts:
-        return  # Silent — all good
+    header_icon = "💀" if any(e["level"] == "CRITICAL" for e in log.entries) else \
+                  "🔴" if any(e["level"] == "ERROR" for e in log.entries) else \
+                  "🟡" if any(e["level"] == "WARNING" for e in log.entries) else "✅"
 
-    print(f"🚨 **SERVER WATCHDOG**")
-    print(f"`{wib}`")
-    print("")
+    if not alerts:
+        lines.append(f"{header_icon} 📡 SysWatch")
+        lines.append("")
+        if ram_data:
+            lines.append("RAM")
+            lines.append(f"• Pemakaian: {ram_pct}% ({ram_data['used']}/{ram_data['total']})")
+            lines.append("")
+        if disk_data:
+            lines.append("Disk")
+            lines.append(f"• Pemakaian: {disk_pct}% ({disk_data['used']}/{disk_data['total']})")
+            lines.append("")
+        if cpu_data:
+            lines.append("CPU")
+            lines.append(f"• Beban: {cpu_data['load']}")
+            lines.append("")
+        lines.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
+        log.persist()
+        print("\n".join(lines))
+        return
+
+    # Ada masalah
+    lines.append(f"{header_icon} 📡 SysWatch")
+    lines.append("")
     for a in alerts:
-        print(a)
+        lines.append(a)
+    lines.append("")
     if recs:
-        print("")
-        print("**💡 Rekomendasi:**")
         for r in recs:
-            print(r)
-    print("")
-    print("━━━━━━━━━━━━━━━━━━━")
+            lines.append(r)
+        lines.append("")
+
+    err_report = log.format_report()
+    if err_report:
+        lines.append(err_report)
+        lines.append("")
+
+    lines.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
+    log.persist()
+    print("\n".join(lines))
 
 
 if __name__ == "__main__":
-    check()
+    try:
+        check()
+    except Exception:
+        log.exception("Watchdog error", "Coba jalankan ulang")
+        print(f"🔴 📡 SysWatch\n\n🕐 {datetime.now().strftime('%a %d %b %H:%M')}")

@@ -1,201 +1,205 @@
 #!/usr/bin/env python3
-"""
-💰 BREACH INCOME PIPELINE v1.0
-Automated money opportunity scraper & analyzer
-Runs every 6 hours, delivers fresh leads
-"""
+"""💰 Income Pipeline — nyari gigs & peluang cuan dari Reddit, Freelancer, DeFi."""
 import json
-import urllib.request
-import urllib.error
-import urllib.parse
-import re
 import os
+import re
+import urllib.parse
+import urllib.request
+import sys
 from datetime import datetime
-from html.parser import HTMLParser
 
-CACHE_DIR = "/root/bounty_output"
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
+from error_log import ErrorLog
+
+CACHE_DIR = "/root/projects/bounty-output"
 os.makedirs(CACHE_DIR, exist_ok=True)
+
+log = ErrorLog("💰 Income Pipeline")
 RESULTS = []
+TS = datetime.now().strftime("%H:%M")
 
-def log(cat, msg):
-    ts = datetime.now().strftime("%H:%M:%S")
-    RESULTS.append(f"[{ts}] [{cat}] {msg}")
 
-def fetch(url, headers=None):
-    if headers is None:
-        headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"}
+def tulis(cat, msg):
+    RESULTS.append(f"[{TS}] [{cat}] {msg}")
+
+
+def fetch(url, timeout=20):
     try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=20) as r:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"
+        })
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as e:
+        log.warning(f"Gagal buka {url[:40]}...", f"Server ngasih kode {e.code}", "Cek apakah situsnya lagi down")
+        return None
+    except urllib.error.URLError as e:
+        log.warning(f"Gagal konek {url[:40]}...", f"Error jaringan: {e.reason}", "Cek koneksi internet")
+        return None
+    except TimeoutError:
+        log.warning(f"Koneksi timeout {url[:40]}...", f"Lebih dari {timeout} detik gak ada respon", "Cek latency koneksi")
+        return None
     except Exception as e:
+        log.error(f"Error buka {url[:40]}...", f"{type(e).__name__}: {e}", "Coba buka manual di browser")
         return None
 
-def scrape_reddit(subreddit, query="paypal crypto usd bitcoin"):
-    """Scrape Reddit for gig posts"""
-    url = f"https://www.reddit.com/r/{subreddit}/search.json?q={urllib.parse.quote(query)}&restrict_sr=on&sort=new&limit=15"
-    data = fetch(url, {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Python/3.11"})
-    if not data:
-        log(subreddit, "Failed to fetch")
+
+# ─── REDDIT ───────────────────────────────────────────────────────────────────
+
+def cek_reddit(subreddit, query="paypal crypto usd bitcoin"):
+    url = (f"https://old.reddit.com/r/{subreddit}/search.rss?"
+           f"q={urllib.parse.quote(query)}&sort=new&restrict_sr=on&limit=15")
+    html = fetch(url)
+    if not html:
+        tulis(subreddit, "Gagal ambil data")
         return
-    
+
+    entries = re.findall(r'<entry>(.*?)</entry>', html, re.DOTALL)
+    if not entries:
+        tulis(subreddit, "Gak ada postingan")
+        log.warning(f"Reddit r/{subreddit} kosong", "Feed RSS gak ngembaliin data", "Cek manual di old.reddit.com")
+        return
+
+    tulis(subreddit, f"Dapet {len(entries)} postingan")
+    keywords = ['$', 'usd', 'pay', 'paypal', 'btc', 'eth', 'crypto', 'task', 'job', 'hire']
+    count = 0
+    for e in entries[:8]:
+        title_m = re.search(r'<title>(.*?)</title>', e, re.DOTALL)
+        link_m = re.search(r'<link[^>]*href="([^"]+)"', e) or re.search(r'<link>(.*?)</link>', e)
+        title = title_m.group(1).strip() if title_m else "?"
+        title = title.replace('&amp;', '&').replace('&#x27;', "'").replace('&quot;', '"')
+        link = link_m.group(1).strip() if link_m else "?"
+        if any(kw in title.lower() for kw in keywords):
+            tulis(subreddit, f"[?pts] {title[:120]}")
+            tulis(subreddit, f"       {link}")
+            count += 1
+    if count == 0:
+        tulis(subreddit, "Gak ada postingan relevan")
+
+
+# ─── DEFI ─────────────────────────────────────────────────────────────────────
+
+def cek_defillama():
+    data = fetch("https://api.llama.fi/protocols", timeout=15)
+    if not data:
+        tulis("DeFiLlama", "Gagal ambil data")
+        return
     try:
         j = json.loads(data)
-        posts = j.get("data", {}).get("children", [])
-        if not posts:
-            log(subreddit, "No posts found")
-            return
-        
-        log(subreddit, f"Found {len(posts)} posts")
-        count = 0
-        for p in posts[:8]:
-            d = p.get("data", {})
-            title = d.get("title", "")
-            score = d.get("score", 0)
-            url_post = d.get("url", "")
-            # Filter for money-related
-            money_kw = ['$', 'usd', 'pay', 'paypal', 'btc', 'eth', 'crypto', 'bitcoin', 'task', 'job', 'work', 'hire']
-            if any(kw in title.lower() for kw in money_kw):
-                log(subreddit, f"[{score}pts] {title[:120]}")
-                log(subreddit, f"       {url_post}")
-                count += 1
-        
-        if count == 0:
-            log(subreddit, "No money-related posts in results")
-    except Exception as e:
-        log(subreddit, f"Parse error: {e}")
+    except json.JSONDecodeError:
+        tulis("DeFiLlama", "Data bukan JSON")
+        log.error("Data DeFiLlama error", "API ngasih balasan yang bukan JSON", "Cek https://api.llama.fi/protocols")
+        return
+    if not isinstance(j, list):
+        tulis("DeFiLlama", "Format data aneh")
+        return
+    valid = [p for p in j if p.get("change_1d") is not None]
+    if not valid:
+        log.warning("Data DeFiLlama kosong", "Semua protocol gak punya data perubahan 1 hari", "Mungkin API lagi error")
+        tulis("DeFiLlama", "Gak ada data perubahan")
+        return
+    valid.sort(key=lambda p: abs(p["change_1d"]), reverse=True)
+    tulis("DeFiLlama", f"Tracking {len(valid)}/{len(j)} protocol")
+    for p in valid[:5]:
+        n, tvl, chg, sym = p.get("name", "?"), p.get("tvl", 0) or 0, p.get("change_1d", 0) or 0, p.get("symbol", "") or ""
+        tulis("DeFiLlama", f"  {sym:6s} {n:20s} TVL ${tvl:,.0f}  ({chg:+.2f}%)")
 
-def scrape_layer3_quests():
-    """Try multiple known Layer3 API endpoints"""
-    endpoints = [
-        "https://api.layer3.xyz/api/trpc/quest.listActiveQuests?limit=5",
-        "https://layer3.xyz/api/trpc/quest.listActiveQuests?limit=5",
-        "https://api.layer3.io/api/trpc/quest.listActiveQuests?limit=5",
-    ]
-    for ep in endpoints:
-        data = fetch(ep)
-        if data:
-            log("Layer3", f"API endpoint works: {ep.split('/api')[0]}")
-            try:
-                j = json.loads(data)
-                quests = j.get("result", {}).get("data", {}).get("json", [])
-                if quests:
-                    log("Layer3", f"{len(quests)} active quests!")
-                    for q in quests[:5]:
-                        title = q.get("title", q.get("name", "Unnamed"))
-                        log("Layer3", f"  • {title}")
-                    return
-            except:
-                log("Layer3", f"Response received but couldn't parse")
-                return
-    log("Layer3", "No API endpoints responded")
 
-def scrape_galxe():
-    """Try Galxe API"""
-    # Galxe uses GraphQL
-    data = fetch("https://api.galxe.com/", {
-        "User-Agent": "Mozilla/5.0",
-        "Content-Type": "application/json"
-    })
-    if data:
-        log("Galxe", "API accessible")
+def cek_gas():
+    html = fetch("https://etherscan.io/gastracker", timeout=15)
+    if not html:
+        tulis("Gas", "Gagal ambil data")
+        return
+    low = re.search(r'Low\s*:\s*([0-9.]+)', html, re.IGNORECASE)
+    high = re.search(r'(?:High|Fast)\s*:\s*([0-9.]+)', html, re.IGNORECASE)
+    base = re.search(r'Base Fee\s*:\s*([0-9.]+)', html, re.IGNORECASE)
+    parts = []
+    if low: parts.append(f"Low={low.group(1)}")
+    if base: parts.append(f"Base={base.group(1)}")
+    if high: parts.append(f"High={high.group(1)}")
+    if parts:
+        tulis("Gas", f"Ethereum gas: {' | '.join(parts)} Gwei")
     else:
-        log("Galxe", "API not accessible directly")
-    
-    # Check main page for campaigns
-    html = fetch("https://galxe.com/campaigns", {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
-    })
-    if html and len(html) > 1000:
-        log("Galxe", "Campaigns page accessible ✓")
-        # Try to extract campaign names
-        titles = re.findall(r'<h[23][^>]*>([^<]{10,80})</h[23]>', html)
-        for t in titles[:5]:
-            log("Galxe", f"  • {t.strip()}")
-    else:
-        log("Galxe", "Campaigns page not accessible")
+        log.warning("Gagal baca gas Ethereum", "Halaman etherscan kebuka tapi angka gas gak terbaca", "Mungkin struktur halaman berubah")
 
-def scrape_free_pm():
-    """Scrape Freelance job boards for quick gigs"""
-    # Check Upwork RSS
-    data = fetch("https://www.upwork.com/ab/feed/topics/rss?cat=web-mobile-software-dev")
-    if data and "xml" in data[:100].lower():
-        # Extract job titles
-        titles = re.findall(r'<title><!\[CDATA\[([^\]]+)\]\]></title>', data)
-        titles = titles[:5] if len(titles) > 5 else titles
-        if titles:
-            log("Upwork", f"{len(titles)} recent dev jobs")
-            for t in titles[:3]:
-                log("Upwork", f"  • {t[:100]}")
-    else:
-        log("Upwork", "RSS feed not accessible")
-    
-    # Check peopleperhour
-    html = fetch("https://www.peopleperhour.com/freelance-jobs")
-    if html:
-        log("PeoplePerHour", "Jobs page accessible")
-        titles = re.findall(r'<h3[^>]*>([^<]{15,100})</h3>', html)
-        for t in titles[:3]:
-            log("PeoplePerHour", f"  • {t.strip()}")
-    else:
-        log("PeoplePerHour", "Not accessible")
 
-def suggest_actions():
-    """Generate actionable next steps based on findings"""
-    print("\n" + "=" * 60)
-    print("🎯 ACTIONABLE NEXT STEPS")
-    print("=" * 60)
-    print("""
-1️⃣  REDDIT GIGS — Reply to posts above with your offer
-    • Data entry: $5-10/hr
-    • Translation EN→ID: $10-20/1000words
-    • Virtual assistant: $5-15/hr
+# ─── FREELANCER ───────────────────────────────────────────────────────────────
 
-2️⃣  TESTNET FARMING (free money)
-    • Go to https://www.alchemy.com/faucets → claim Sepolia ETH
-    • Bridge to zkSync/Base/Scroll testnet
-    • Do swaps on testnet DEX → farm points → redeem later
+def cek_freelancer():
+    data = fetch("https://www.freelancer.com/api/projects/0.1/projects/active/?limit=5", timeout=15)
+    if not data:
+        tulis("Freelancer", "Gagal ambil data")
+        return
+    try:
+        j = json.loads(data)
+    except json.JSONDecodeError:
+        log.error("Data Freelancer error", "API ngasih balasan bukan JSON", "Cek API Freelancer")
+        tulis("Freelancer", "Data error")
+        return
+    if j.get("status") != "success":
+        log.warning("API Freelancer error", f"Status: {j.get('message', '?')}", "Mungkin kena rate limit")
+        tulis("Freelancer", f"API error: {j.get('message', '?')}")
+        return
+    projects = j.get("result", {}).get("projects", [])
+    if not projects:
+        tulis("Freelancer", "Gak ada project baru")
+        return
+    tulis("Freelancer", f"{len(projects)} project baru")
+    for p in projects[:5]:
+        title = p.get("title", "Untitled")[:70]
+        budget = p.get("budget", {})
+        amount = budget.get("minimum", "?")
+        currency = budget.get("currency", {}).get("code", "$")
+        tulis("Freelancer", f"  • {title} — {currency}{amount}")
 
-3️⃣  FREELANCE REGISTRATION
-    • Upwork.com — Create profile, bid on EN→ID translation
-    • Fiverr.com — Gig: "I will translate 1000 words ENG to ID for $5"
-    • PeoplePerHour — Similar
 
-4️⃣  QUICK MICRO TASKS
-    • r/slavelabour — Sort by new, be first to reply
-    • Appen/OneForma — AI training tasks ($5-12/hr)
-    • Clickworker — Micro tasks ($1-5/task)
-""")
+# ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("💰 BREACH INCOME PIPELINE v1.0")
-    print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
-    
-    print("\n📡 Scraping Reddit...")
-    scrape_reddit("slavelabour", "paypal crypto usd bitcoin")
-    scrape_reddit("beermoney", "paypal free crypto")
-    scrape_reddit("forhire", "paypal usd")
-    
-    print("\n🌐 Checking Crypto Platforms...")
-    scrape_layer3_quests()
-    scrape_galxe()
-    
-    print("\n💼 Checking Freelance Boards...")
-    scrape_free_pm()
-    
-    print("\n" + "=" * 60)
-    for r in RESULTS:
-        print(r)
-    
-    suggest_actions()
-    
-    # Save report
-    report_path = f"{CACHE_DIR}/pipeline_report.txt"
-    with open(report_path, "w") as f:
-        f.write(f"BREACH Income Pipeline Report — {datetime.now().isoformat()}\n")
-        f.write("=" * 60 + "\n")
-        f.write("\n".join(RESULTS))
-        f.write("\n")
-    print(f"\n📄 Report saved: {report_path}")
+    try:
+        cek_reddit("slavelabour", "paypal crypto usd bitcoin")
+        cek_reddit("beermoney", "paypal free crypto")
+        cek_reddit("forhire", "paypal usd")
+        cek_defillama()
+        cek_gas()
+        cek_freelancer()
+    except Exception:
+        log.exception("Pipeline error total", "Cek koneksi internet & API")
+
+    # ── Simpan ke cache ──
+    try:
+        with open(f"{CACHE_DIR}/pipeline_report.txt", "w") as f:
+            f.write(f"💰 Income Pipeline — {datetime.now().isoformat()}\n")
+            f.write("=" * 52 + "\n")
+            for r in RESULTS:
+                f.write(r + "\n")
+    except OSError:
+        log.error("Gagal simpan cache", "File report gak bisa ditulis", "Cek disk")
+
+    # ── STDOUT: cuma kalo ada gigs $50+ ──
+    high_val = [r for r in RESULTS if re.search(r'\$[5-9]\d{2,}|\$\d{4,}', r)]
+
+    output = []
+    if high_val:
+        output.append("💰 💰 **GIG NILAI TINGGI!** 💰 💰")
+        output.append("")
+        for h in high_val:
+            # Format ke style bullet
+            parts = h.split("] ", 1)
+            if len(parts) == 2:
+                src = parts[0].strip("[]")
+                msg = parts[1]
+                output.append(f"**{src}**")
+                output.append(f"• {msg}")
+                output.append("")
+
+    # Append error report kalo ada critical/error
+    err_report = log.format_report()
+    if err_report and (high_val or log.ada_masalah()):
+        output.append(err_report)
+
+    if output:
+        output.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
+        print("\n".join(output))
+
+    log.persist()
