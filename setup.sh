@@ -249,46 +249,32 @@ phase_ssh() {
     mkdir -p /root/.ssh
     chmod 700 /root/.ssh
 
-    # ── 2.2 SSH Key (skip if already exists) ──
+    # ── 2.2 SSH Key (auto-generate if missing) ──
     if [ ! -f /root/.ssh/authorized_keys ] || [ ! -s /root/.ssh/authorized_keys ]; then
+        # Auto-generate keypair
+        ssh-keygen -t ed25519 -f /root/.ssh/id_grace -N "" -C "grace-ku-sayang-$(date +%Y%m%d)" -q
+        cp /root/.ssh/id_grace.pub /root/.ssh/authorized_keys
+        chmod 600 /root/.ssh/id_grace
+        chmod 644 /root/.ssh/id_grace.pub
+        
+        # Save private key in /root/.ssh/id_grace.export (user must retrieve it)
+        # User should connect via VNC or provider console to grab it
         echo ""
-        echo -e "${YELLOW}╔══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${YELLOW}║  🔑 SSH KEY SETUP                                          ║${NC}"
-        echo -e "${YELLOW}╠══════════════════════════════════════════════════════════════╣${NC}"
-        echo -e "${YELLOW}║  No SSH key detected. Two options:                          ║${NC}"
-        echo -e "${YELLOW}║                                                            ║${NC}"
-        echo -e "${YELLOW}║  1) Paste your PUBLIC key now (recommended if you have one) ║${NC}"
-        echo -e "${YELLOW}║  2) Let me generate a new keypair and send privkey to       ║${NC}"
-        echo -e "${YELLOW}║     Telegram (no local hardware needed)                      ║${NC}"
-        echo -e "${YELLOW}╚══════════════════════════════════════════════════════════════╝${NC}"
+        echo "╔══════════════════════════════════════════════════════════════════╗"
+        echo "║  🔑 NEW SSH KEY GENERATED                                      ║"
+        echo "╠══════════════════════════════════════════════════════════════════╣"
+        echo "║  Private key saved to: /root/.ssh/id_grace                     ║"
+        echo "║                                                                ║"
+        echo "║  COPY THIS KEY TO YOUR DEVICE NOW or you will LOSE ACCESS:     ║"
+        echo "╚══════════════════════════════════════════════════════════════════╝"
         echo ""
-        read -r -p "Paste your public key (or press Enter to auto-generate): " USER_PUBKEY
-
-        if [ -n "$USER_PUBKEY" ]; then
-            echo "$USER_PUBKEY" > /root/.ssh/authorized_keys
-            ok "SSH public key saved from user input"
-        else
-            # Auto-generate keypair
-            ssh-keygen -t ed25519 -f /root/.ssh/id_grace -N "" -C "grace-ku-sayang-$(date +%Y%m%d)" -q
-            cp /root/.ssh/id_grace.pub /root/.ssh/authorized_keys
-            chmod 600 /root/.ssh/id_grace
-            chmod 644 /root/.ssh/id_grace.pub
-            echo ""
-            echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
-            echo -e "${RED}║  ⚠️  SAVE THIS PRIVATE KEY NOW!                             ║${NC}"
-            echo -e "${RED}║  You will NOT be able to get it again after this script.     ║${NC}"
-            echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
-            echo ""
-            echo "----- PRIVATE KEY (copy from here to your device) -----"
-            cat /root/.ssh/id_grace
-            echo "----- END PRIVATE KEY -----"
-            echo ""
-            echo -e "${YELLOW}After copying the key, press Enter to continue (key will be deleted)${NC}"
-            read -r
-            # Securely delete private key from server (user saved it)
-            shred -u /root/.ssh/id_grace 2>/dev/null || rm -f /root/.ssh/id_grace
-            ok "SSH key generated. Private key delivered above, deleted from server"
-        fi
+        cat /root/.ssh/id_grace
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════════╗"
+        echo "║  Script will continue in 15 seconds...                         ║"
+        echo "╚══════════════════════════════════════════════════════════════════╝"
+        sleep 15
+        ok "SSH key generated. Private key shown above — save it!"
     else
         skip "SSH authorized_keys already exists"
     fi
@@ -745,6 +731,22 @@ phase_hermes() {
         ok "Hermes scripts copied"
     fi
 
+    # Copy lib/ (error_log shared library)
+    if [ -d "$REPO_DIR/hermes/scripts/lib" ]; then
+        mkdir -p /home/hermes/.hermes/scripts/lib
+        cp -r "$REPO_DIR/hermes/scripts/lib/"* /home/hermes/.hermes/scripts/lib/ 2>/dev/null || true
+        chown -R hermes:hermes /home/hermes/.hermes/scripts/lib
+        ok "Hermes script lib copied"
+    fi
+
+    # Install Python dependencies
+    if [ -f "$REPO_DIR/hermes/requirements.txt" ] && [ -s "$REPO_DIR/hermes/requirements.txt" ]; then
+        info "Installing Hermes Python deps..."
+        pip install -r "$REPO_DIR/hermes/requirements.txt" -q 2>/dev/null && \
+            ok "Python deps installed" || \
+            warn "pip install failed — run manually: pip install -r $REPO_DIR/hermes/requirements.txt"
+    fi
+
     # Copy cron jobs
     if [ -f "$REPO_DIR/hermes/cron/jobs.json" ]; then
         mkdir -p /home/hermes/.hermes/cron
@@ -797,6 +799,10 @@ SERVICE
     systemctl daemon-reload
     systemctl enable hermes
     ok "Hermes systemd service created (not started yet — update config first)"
+
+    # ── 8.5 Output directories ──
+    mkdir -p /root/projects/bounty-output/proxies
+    ok "Monitor output directories created"
 }
 
 # ╔══════════════════════════════════════════════════════════════════════════╗
@@ -875,8 +881,10 @@ MOTD
     echo ""
     echo -e "  ${YELLOW}⚠️  NEXT STEPS:${NC}"
     echo "  1. Update API keys in /home/hermes/.hermes/config.yaml"
-    echo "  2. If IP changed, update Telegram webhook"
-    echo "  3. Reboot recommended to apply all changes:"
+    echo "  2. Deploy cron monitors:"
+    echo "     cd ~/projects/flowcore-vps/hermes && bash deploy-cron.sh"
+    echo "  3. If IP changed, update Telegram webhook"
+    echo "  4. Reboot recommended to apply all changes:"
     echo "     sudo reboot"
     echo ""
     echo -e "  ${BOLD}🔥 BREACH — deployed with zero-fucks attitude${NC}"

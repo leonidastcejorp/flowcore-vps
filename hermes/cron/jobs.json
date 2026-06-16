@@ -1,215 +1,38 @@
 {
-  "jobs": [
-    {
-      "id": "c467b0c54aa3",
-      "name": "🚨 FBI Watchdog",
-      "prompt": "",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "base_url": null,
-      "script": "monitor.py",
-      "no_agent": true,
-      "context_from": null,
-      "schedule": {
-        "kind": "interval",
-        "minutes": 360,
-        "display": "every 360m"
-      },
-      "schedule_display": "every 360m",
-      "repeat": {
-        "times": null,
-        "completed": 3
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-06-15T17:30:11.565570+00:00",
-      "next_run_at": "2026-06-16T00:29:14.677702+00:00",
-      "last_run_at": "2026-06-15T18:29:14.677702+00:00",
-      "last_status": "ok",
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "telegram:-1004354643360:344",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "5695981991",
-        "chat_name": "Try to be a rich | Harder 🗣️",
-        "thread_id": null
-      },
-      "enabled_toolsets": null,
-      "workdir": null
+  "//": "🔥 BREACH Cron Jobs — Reference config",
+  "//2": "This is a snapshot for migration reference.",
+  "//3": "To deploy on a new VPS, run: bash deploy-cron.sh",
+  "//4": "That script uses 'hermes cron create' for each job.",
+  "jobs_schedule": {
+    "hourly": {
+      "00": "📈 MemStat — memory_monitor.py",
+      "15": "🔁 Bootmark — reboot_monitor.py",
+      "30": "📊 Session Deck — context_monitor.py"
     },
-    {
-      "id": "4aafc5a74264",
-      "name": "📊 FBI Daily Briefing",
-      "prompt": "",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "base_url": null,
-      "script": "daily_report.py",
-      "no_agent": true,
-      "context_from": null,
-      "schedule": {
-        "kind": "cron",
-        "expr": "0 16 * * *",
-        "display": "0 16 * * *"
-      },
-      "schedule_display": "0 16 * * *",
-      "repeat": {
-        "times": null,
-        "completed": 1
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-06-15T18:34:16.482607+00:00",
-      "next_run_at": "2026-06-16T16:00:00+00:00",
-      "last_run_at": "2026-06-15T18:35:13.817248+00:00",
-      "last_status": "ok",
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "telegram:-1004354643360:344",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "-1004354643360",
-        "chat_name": "Kantor FBI",
-        "thread_id": "344"
-      },
-      "enabled_toolsets": null,
-      "workdir": null
+    "every_6h": {
+      "00": "📀 DiskBay — disk_alert.sh",
+      "10": "💰 Cuan Feed — income_pipeline.py",
+      "20": "🚪 PortGuard — ssh_attack_monitor.py",
+      "30": "📡 VitalSign — monitor.py",
+      "40": "📋 LogDesk — error_summary.py",
+      "50": "🔄 Proxy — proxy_updater.py (local)"
     },
-    {
-      "id": "622122a19dd8",
-      "name": "🧹 Hermes Session Prune",
-      "prompt": "",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "base_url": null,
-      "script": "prune.sh",
-      "no_agent": true,
-      "context_from": null,
-      "schedule": {
-        "kind": "cron",
-        "expr": "0 3 * * 1",
-        "display": "0 3 * * 1"
-      },
-      "schedule_display": "0 3 * * 1",
-      "repeat": {
-        "times": null,
-        "completed": 0
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-06-15T18:41:41.301681+00:00",
-      "next_run_at": "2026-06-22T03:00:00+00:00",
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "local",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "5695981991",
-        "chat_name": "Try to be a rich | Harder 🗣️",
-        "thread_id": null
-      },
-      "enabled_toolsets": null,
-      "workdir": null
-    },
-    {
-      "id": "2938df6af833",
-      "name": "💰 Income Pipeline Monitor",
-      "prompt": "Run the income pipeline monitor script. Execute the script with python3 ~/.hermes/scripts/income_pipeline.py and report the most promising income opportunities found. Focus on: 1) any freelance gigs that pay in USD/PayPal 2) any crypto testnet/airdrop opportunities 3) any quick money tasks. If nothing new, just report \"No new leads.\"",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "base_url": null,
-      "script": "income_pipeline.py",
-      "no_agent": false,
-      "context_from": null,
-      "schedule": {
-        "kind": "interval",
-        "minutes": 360,
-        "display": "every 360m"
-      },
-      "schedule_display": "every 360m",
-      "repeat": {
-        "times": null,
-        "completed": 0
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-06-15T19:32:50.121731+00:00",
-      "next_run_at": "2026-06-16T01:32:50.121761+00:00",
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "origin",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "5695981991",
-        "chat_name": "Try to be a rich | Harder 🗣️",
-        "thread_id": null
-      },
-      "enabled_toolsets": null,
-      "workdir": null
-    },
-    {
-      "id": "4d163acf64e7",
-      "name": "🔁 Proxy Auto-Updater",
-      "prompt": "Run the proxy updater script to refresh free proxy list.",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "base_url": null,
-      "script": "proxy_updater.py",
-      "no_agent": false,
-      "context_from": null,
-      "schedule": {
-        "kind": "interval",
-        "minutes": 360,
-        "display": "every 360m"
-      },
-      "schedule_display": "every 360m",
-      "repeat": {
-        "times": null,
-        "completed": 0
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-06-15T19:46:40.350564+00:00",
-      "next_run_at": "2026-06-16T01:46:40.350592+00:00",
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "local",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "5695981991",
-        "chat_name": "Try to be a rich | Harder 🗣️",
-        "thread_id": null
-      },
-      "enabled_toolsets": null,
-      "workdir": null
+    "fixed": {
+      "16:00 daily":     "📊 Daily Briefing — daily_report.py",
+      "Mon 03:00":       "🧹 Session Prune — prune.sh (local)",
+      "Sun 02:00":       "💾 Weekly Backup — vps_backup.sh (local)"
     }
-  ],
-  "updated_at": "2026-06-15T19:46:40.350868+00:00"
+  },
+  "all_no_agent": true,
+  "delivery": "telegram:-1003534226714 (Kantor FBI group)",
+  "state_files": {
+    "memory_monitor.py":     "~/.hermes/scripts/.memory_state.json",
+    "reboot_monitor.py":     "~/.hermes/scripts/.boot_state.json",
+    "context_monitor.py":    "~/.hermes/scripts/.context_thresholds.json",
+    "error_summary.py":      "~/.hermes/scripts/.error_summary_state.json"
+  },
+  "output_dirs": {
+    "/root/projects/bounty-output/": "Income pipeline cache + error reports",
+    "/root/projects/bounty-output/proxies/": "Proxy pool files"
+  }
 }
