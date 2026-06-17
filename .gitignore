@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.venv/
+venv/
+.env
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project outputs
+data/*.txt
+!data/.gitkeep
+projects/bounty-output/
+projects/airdrop-pipeline/
+
+# Backup files
+*.bak
+*.old
