@@ -3,10 +3,10 @@
 import json
 import os
 import re
-import subprocess
+import urllib.parse
+import urllib.request
 import sys
 from datetime import datetime
-import urllib.request
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 from error_log import ErrorLog
@@ -14,7 +14,7 @@ from error_log import ErrorLog
 CACHE_DIR = "/root/projects/bounty-output"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-log = ErrorLog("💰 Cuan Feed")
+log = ErrorLog("💰 Income Pipeline")
 RESULTS = []
 TS = datetime.now().strftime("%H:%M")
 
@@ -181,10 +181,17 @@ if __name__ == "__main__":
 
     output = []
     if high_val:
-        output.append("💰 **HIGH-VALUE GIG!**\n")
-        for h in high_val:
-            output.append(h)
+        output.append("💰 💰 **GIG NILAI TINGGI!** 💰 💰")
         output.append("")
+        for h in high_val:
+            # Format ke style bullet
+            parts = h.split("] ", 1)
+            if len(parts) == 2:
+                src = parts[0].strip("[]")
+                msg = parts[1]
+                output.append(f"**{src}**")
+                output.append(f"• {msg}")
+                output.append("")
 
     # Append error report kalo ada critical/error
     err_report = log.format_report()
@@ -192,6 +199,7 @@ if __name__ == "__main__":
         output.append(err_report)
 
     if output:
+        output.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
         print("\n".join(output))
 
     log.persist()

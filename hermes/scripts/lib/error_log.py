@@ -114,12 +114,11 @@ class ErrorLog:
             shown_any_bad = True
 
             for e in lev_entries:
-                lines.append(f"{icon} **{e['judul']}**")
+                lines.append(f"⚠️ {e['judul']}")
                 if e["detail"]:
-                    # Wrap detail in bullet
-                    lines.append(f"  {e['detail']}")
+                    lines.append(f"• Masalah: {e['detail']}")
                 if e["saran"]:
-                    lines.append(f"  → {e['saran']}")
+                    lines.append(f"• Saran: {e['saran']}")
                 lines.append("")
 
         # ── OK messages ──

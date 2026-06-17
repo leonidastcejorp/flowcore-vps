@@ -1,38 +1,509 @@
 {
-  "//": "🔥 BREACH Cron Jobs — Reference config",
-  "//2": "This is a snapshot for migration reference.",
-  "//3": "To deploy on a new VPS, run: bash deploy-cron.sh",
-  "//4": "That script uses 'hermes cron create' for each job.",
-  "jobs_schedule": {
-    "hourly": {
-      "00": "📈 MemStat — memory_monitor.py",
-      "15": "🔁 Bootmark — reboot_monitor.py",
-      "30": "📊 Session Deck — context_monitor.py"
+  "jobs": [
+    {
+      "id": "c467b0c54aa3",
+      "name": "\ud83d\udea8 FBI Watchdog",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": null,
+        "completed": 7
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-15T17:30:11.565570+00:00",
+      "next_run_at": "2026-06-17T07:29:50.539895+07:00",
+      "last_run_at": "2026-06-17T01:29:50.539895+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "5695981991",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
+        "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
     },
-    "every_6h": {
-      "00": "📀 DiskBay — disk_alert.sh",
-      "10": "💰 Cuan Feed — income_pipeline.py",
-      "20": "🚪 PortGuard — ssh_attack_monitor.py",
-      "30": "📡 VitalSign — monitor.py",
-      "40": "📋 LogDesk — error_summary.py",
-      "50": "🔄 Proxy — proxy_updater.py (local)"
+    {
+      "id": "4aafc5a74264",
+      "name": "\ud83d\udcca FBI Daily Briefing",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "daily_report.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 16 * * *",
+        "display": "0 16 * * *"
+      },
+      "schedule_display": "0 16 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 2
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-15T18:34:16.482607+00:00",
+      "next_run_at": "2026-06-17T16:00:00+07:00",
+      "last_run_at": "2026-06-16T23:28:30.311609+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
     },
-    "fixed": {
-      "16:00 daily":     "📊 Daily Briefing — daily_report.py",
-      "Mon 03:00":       "🧹 Session Prune — prune.sh (local)",
-      "Sun 02:00":       "💾 Weekly Backup — vps_backup.sh (local)"
+    {
+      "id": "622122a19dd8",
+      "name": "\ud83e\uddf9 Hermes Session Prune",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "prune.sh",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 3 * * 1",
+        "display": "0 3 * * 1"
+      },
+      "schedule_display": "0 3 * * 1",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-15T18:41:41.301681+00:00",
+      "next_run_at": "2026-06-22T03:00:00+00:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "5695981991",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
+        "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "2938df6af833",
+      "name": "\ud83d\udcb0 Income Pipeline Monitor",
+      "prompt": "Run the income pipeline monitor script.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "income_pipeline.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": null,
+        "completed": 4
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-15T19:32:50.121731+00:00",
+      "next_run_at": "2026-06-17T08:39:50.721682+07:00",
+      "last_run_at": "2026-06-17T02:39:50.721682+07:00",
+      "last_status": "error",
+      "last_error": "Script exited with code 1\nstderr:\nTraceback (most recent call last):\n  File \"/home/hermes/.hermes/scripts/income_pipeline.py\", line 10, in <module>\n    sys.path.insert(0, os.path.join(os.path.dirname(__file__), \"lib\"))\n    ^^^\nNameError: name 'sys' is not defined",
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "5695981991",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
+        "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "4d163acf64e7",
+      "name": "\ud83d\udd01 Proxy Auto-Updater",
+      "prompt": "Run the proxy updater script to refresh free proxy list.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "proxy_updater.py",
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": null,
+        "completed": 3
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-15T19:46:40.350564+00:00",
+      "next_run_at": "2026-06-17T02:57:48.692902+07:00",
+      "last_run_at": "2026-06-16T20:57:48.692902+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "5695981991",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
+        "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "eab49bd90317",
+      "name": "\ud83d\udce6 VPS Weekly Backup",
+      "prompt": "Run the VPS backup script to create a weekly backup of Hermes config and projects.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "vps_backup.sh",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 2 * * 0",
+        "display": "0 2 * * 0"
+      },
+      "schedule_display": "0 2 * * 0",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T00:14:08.069810+00:00",
+      "next_run_at": "2026-06-21T02:00:00+00:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "5695981991",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
+        "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "ed2bf23b2327",
+      "name": "\ud83d\udcbe Disk Usage Watchdog",
+      "prompt": "Check disk usage and swap status. Silent when clear, warns when >80%.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "disk_alert.sh",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": null,
+        "completed": 3
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T00:14:09.072877+00:00",
+      "next_run_at": "2026-06-17T07:14:50.599392+07:00",
+      "last_run_at": "2026-06-17T01:14:50.599392+07:00",
+      "last_status": "error",
+      "last_error": "Script exited with code 1\nstderr:\nTraceback (most recent call last):\n  File \"<stdin>\", line 3, in <module>\nNameError: name 'sys' is not defined. Did you forget to import 'sys'?\nstdout:\n\u2705 **\ud83d\udcc0 Disk Monitor**\n\n\u2705 Disk 35% (13399756/41150640)\n\u2705 Swap aktif \u2705\n\u2705 ZRAM 10MB (16MB terpakai)\n\n\ud83d\udd50 Wed 17 Jun 01:14",
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "5695981991",
+        "chat_name": "Try to be a rich | Harder \ud83d\udde3\ufe0f",
+        "thread_id": null
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "ec3b3fa737b6",
+      "name": "Context Monitor",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "context_monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 60,
+        "display": "every 60m"
+      },
+      "schedule_display": "every 60m",
+      "repeat": {
+        "times": 9999,
+        "completed": 6
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T21:34:08.641190+07:00",
+      "next_run_at": "2026-06-17T03:36:50.791700+07:00",
+      "last_run_at": "2026-06-17T02:36:50.791700+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "168719d753b2",
+      "name": "\ud83d\udeaa SSH Attack Monitor",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "ssh_attack_monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": 9999,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T21:54:18.361508+07:00",
+      "next_run_at": "2026-06-17T03:54:18.361534+07:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "f06e93ef53de",
+      "name": "\ud83d\udd01 Reboot Monitor",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "reboot_monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 15,
+        "display": "every 15m"
+      },
+      "schedule_display": "every 15m",
+      "repeat": {
+        "times": 9999,
+        "completed": 19
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T21:54:19.364117+07:00",
+      "next_run_at": "2026-06-17T02:50:50.790676+07:00",
+      "last_run_at": "2026-06-17T02:35:50.790676+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "c40ee1d3dfda",
+      "name": "\ud83d\udcc8 Memory Pressure Monitor",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "memory_monitor.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 60,
+        "display": "every 60m"
+      },
+      "schedule_display": "every 60m",
+      "repeat": {
+        "times": 9999,
+        "completed": 3
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T21:54:20.367411+07:00",
+      "next_run_at": "2026-06-17T03:29:50.750087+07:00",
+      "last_run_at": "2026-06-17T02:29:50.750087+07:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "304c9a03f330",
+      "name": "\ud83d\udccb Error Log Summary",
+      "prompt": "Run the error summary reporter to check accumulated errors from all monitor scripts.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "error_summary.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 360,
+        "display": "every 360m"
+      },
+      "schedule_display": "every 360m",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-16T23:51:31.573274+07:00",
+      "next_run_at": "2026-06-17T05:51:31.573298+07:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "telegram:-1003534226714",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "-1004354643360",
+        "chat_name": "Kantor FBI",
+        "thread_id": "344"
+      },
+      "enabled_toolsets": null,
+      "workdir": null
     }
-  },
-  "all_no_agent": true,
-  "delivery": "telegram:-1003534226714 (Kantor FBI group)",
-  "state_files": {
-    "memory_monitor.py":     "~/.hermes/scripts/.memory_state.json",
-    "reboot_monitor.py":     "~/.hermes/scripts/.boot_state.json",
-    "context_monitor.py":    "~/.hermes/scripts/.context_thresholds.json",
-    "error_summary.py":      "~/.hermes/scripts/.error_summary_state.json"
-  },
-  "output_dirs": {
-    "/root/projects/bounty-output/": "Income pipeline cache + error reports",
-    "/root/projects/bounty-output/proxies/": "Proxy pool files"
-  }
+  ],
+  "updated_at": "2026-06-17T02:39:50.721820+07:00"
 }

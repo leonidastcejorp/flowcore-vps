@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""🚪 SSH Attack Monitor — ngasih tau kalo ada yang coba hack SSH."""
+"""🚪 SSHDWatch — ngasih tau kalo ada yang coba-coba hack SSH."""
 import json
 import os
 import subprocess
@@ -12,78 +12,66 @@ from error_log import ErrorLog
 STATE_FILE = os.path.expanduser("~/.hermes/scripts/.ssh_attack_state.json")
 AMBANG = 5
 F2B_LOG = "/var/log/fail2ban.log"
-
-log = ErrorLog("🚪 PortGuard")
-
-
-def tabel(data):
-    rows = ["| Komponen | Status |", "|----------|--------|"]
-    for label, value in data:
-        rows.append(f"| {label} | {value} |")
-    return "\n".join(rows)
+log = ErrorLog("🚪 SSHDWatch")
 
 
 def main():
-    output_parts = []
-    now = datetime.now()
+    lines = []
 
-    # ── Cek file fail2ban ──
     if not os.path.exists(F2B_LOG):
-        log.warning("Log fail2ban ilang", "File log gak ditemukan — mungkin service mati", "Cek: fail2ban-client status")
-        error_out()
-        return
+        log.warning("Gak nemuin log fail2ban", "File catatan fail2ban gak ada", "Cek: `fail2ban-client status`")
+        return finalize(lines)
 
     try:
-        result = subprocess.run(
-            ["grep", "NOTICE.*Ban", F2B_LOG],
-            capture_output=True, text=True, timeout=10
-        )
+        result = subprocess.run(["grep", "NOTICE.*Ban", F2B_LOG], capture_output=True, text=True, timeout=10)
     except subprocess.TimeoutExpired:
-        log.error("Log gagal dibaca", "File terlalu besar — timeout", "Cek ukuran: ls -lh /var/log/fail2ban.log")
-        error_out()
-        return
+        log.error("Log fail2ban kebesaran", "Baca file terlalu lama", "Cek ukuran file")
+        return finalize(lines)
     except FileNotFoundError:
-        log.error("Perintah grep gak ada", "Sistem rusak!", "Install ulang coreutils")
-        error_out()
-        return
+        log.error("Perintah grep gak ada", "Program grep gak ditemukan", "Install coreutils")
+        return finalize(lines)
 
     raw = result.stdout.strip()
     if not raw:
-        # Aman — gak ada ban
-        output_parts.append(f"✅ **🚪 PortGuard**\n")
-        output_parts.append(tabel([("Status", "Aman ✅"), ("Percobaan 24j", "0")]))
-        output_parts.append("")
-        output_parts.append(f"🕐 {now.strftime('%a %d %b %H:%M')}")
-        print("\n".join(output_parts))
+        lines.append(f"✅ 🚪 SSHDWatch")
+        lines.append("")
+        lines.append("Status")
+        lines.append("• Aman — gak ada yang nyoba hack")
+        lines.append("")
+        lines.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
+        log.persist()
+        print("\n".join(lines))
         return
 
-    # ── Parse ──
-    lines = raw.split("\n")
     bans = []
-    for line in lines:
+    gagal = 0
+    for line in raw.split("\n"):
         if not line.strip():
             continue
         parts = line.strip().split()
         if len(parts) < 2:
+            gagal += 1
             continue
         ts = parts[0] + " " + parts[1].rstrip(",")
         ip = parts[-1]
         bans.append((ts, ip))
 
-    # Filter 24 jam
+    now = datetime.now()
     cutoff = now - timedelta(hours=24)
     cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M:%S")
     recent = [(ts, ip) for ts, ip in bans if ts >= cutoff_str]
 
     if not recent:
-        output_parts.append(f"✅ **🚪 PortGuard**\n")
-        output_parts.append(tabel([("Status", "Aman ✅"), ("Percobaan 24j", "0")]))
-        output_parts.append("")
-        output_parts.append(f"🕐 {now.strftime('%a %d %b %H:%M')}")
-        print("\n".join(output_parts))
+        lines.append(f"✅ 🚪 SSHDWatch")
+        lines.append("")
+        lines.append("Status")
+        lines.append("• Aman — gak ada percobaan 24 jam terakhir")
+        lines.append("")
+        lines.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
+        log.persist()
+        print("\n".join(lines))
         return
 
-    # ── State ──
     prev_ips = set()
     last_notified = 999
     if os.path.exists(STATE_FILE):
@@ -100,12 +88,7 @@ def main():
     new_ips = current_ips - prev_ips
     new_count = len(new_ips)
 
-    # Simpan state
-    state = {
-        "known_ips": list(current_ips),
-        "last_notified_level": last_notified,
-        "last_checked": now.isoformat(),
-    }
+    state = {"known_ips": list(current_ips), "last_notified_level": last_notified, "last_checked": now.isoformat()}
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     try:
         with open(STATE_FILE, 'w') as f:
@@ -113,26 +96,28 @@ def main():
     except OSError:
         log.error("Gagal simpan data", "File state gak bisa ditulis", "Cek disk")
 
-    # First run
     if last_notified == 999:
+        lines.append(f"✅ 🚪 SSHDWatch")
+        lines.append("")
+        lines.append("Status")
+        lines.append(f"• Pantauan dimulai — {total_bans} percobaan dari {len(current_ips)} IP")
+        lines.append("")
+        lines.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
+        log.persist()
+        print("\n".join(lines))
         return
 
-    # ── Cek threshold ──
     if new_count <= AMBANG or new_count <= last_notified:
-        # Aman — di bawah batas
-        output_parts.append(f"✅ **🚪 PortGuard**\n")
-        output_parts.append(tabel([
-            ("Status", "Aman ✅"),
-            ("Percobaan 24j", str(total_bans)),
-            ("IP unik", str(len(current_ips))),
-            ("IP baru", str(new_count)),
-        ]))
-        output_parts.append("")
-        output_parts.append(f"🕐 {now.strftime('%a %d %b %H:%M')}")
-        print("\n".join(output_parts))
+        lines.append(f"✅ 🚪 SSHDWatch")
+        lines.append("")
+        lines.append("Status")
+        lines.append(f"• Aman — cuma {new_count} IP baru (di bawah batas)")
+        lines.append("")
+        lines.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
+        log.persist()
+        print("\n".join(lines))
         return
 
-    # ── Update last_notified ──
     try:
         with open(STATE_FILE) as f:
             d = json.load(f)
@@ -145,34 +130,50 @@ def main():
     total_unique = len(current_ips)
     top_ips = sorted(new_ips)[:5]
 
-    # ── Alert ──
     if new_count > 20:
-        print(f"🔴 **SSH Diserang!** {new_count} IP baru nyoba login dalam 24 jam")
-        log.critical("SSH diserang", f"{new_count} IP baru dari {total_unique}", "Ganti port atau pasang Cloudflare?")
+        icon = "🔴"
+        label = "Serangan massal!"
+        log.critical("Banyak IP nyoba hack SSH", f"{new_count} IP baru, {total_unique} unik", "Ganti port SSH / Cloudflare WAF")
     else:
-        print(f"🟡 **Ada yang coba-coba SSH** — {new_count} IP baru")
-        log.warning("Percobaan SSH", f"{new_count} IP baru", "Aman — fail2ban udah blokir")
+        icon = "🟡"
+        label = "Ada yang coba-coba"
+        log.warning("Ada percobaan hack SSH", f"{new_count} IP baru", "Gak usah khawatir — fail2ban udah blokir")
 
-    print(f"Total: {total_bans} percobaan dari {total_unique} IP berbeda")
+    lines.append(f"{icon} 🚪 SSHDWatch")
+    lines.append("")
+    lines.append("Status")
+    lines.append(f"• {label} — {new_count} IP baru (24 jam)")
+    lines.append(f"• Total: {total_bans}x percobaan")
+    lines.append(f"• IP beda: {total_unique} unik")
     if top_ips:
         ips = "`" + "` `".join(top_ips) + "`"
-        print(f"IP baru: {ips}{'...' if new_count > 5 else ''}")
+        lines.append(f"• IP baru: {ips}{'...' if new_count > 5 else ''}")
+    lines.append("")
+
     if new_count > 20:
-        print("")
-        print("⚠️ Saranku: ganti port SSH atau pasang Cloudflare WAF biar lebih aman")
+        lines.append("⚠️ Saran")
+        lines.append("• Ganti port SSH atau pasang Cloudflare WAF")
+        lines.append("")
 
+    finalize(lines)
+
+
+def finalize(lines=None):
+    if lines is None:
+        lines = []
+    if not lines:
+        lines.append(f"✅ 🚪 SSHDWatch")
+        lines.append("")
+        lines.append("Status")
+        lines.append("• —")
+        lines.append("")
     err_report = log.format_report()
     if err_report:
-        print(f"\n{err_report}")
-
+        lines.append(err_report)
+        lines.append("")
+    lines.append(f"🕐 {datetime.now().strftime('%a %d %b %H:%M')}")
     log.persist()
-
-
-def error_out():
-    err_report = log.format_report()
-    if err_report:
-        print(err_report)
-    log.persist()
+    print("\n".join(lines))
 
 
 if __name__ == "__main__":
@@ -180,4 +181,4 @@ if __name__ == "__main__":
         main()
     except Exception:
         log.exception("Error gak terduga", "Coba jalankan ulang")
-        error_out()
+        finalize()

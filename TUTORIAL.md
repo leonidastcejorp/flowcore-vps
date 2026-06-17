@@ -1,500 +1,435 @@
 # 📖 FlowCore VPS — Complete Usage Guide
 
-> *Your portable AI agent environment — backup, restore, and manage like a pro.*
+> *Backup VPS grace-ku-sayang — restore, monitor, dan manage kayak pro.*
+> Bahasa Indonesia campur Inggris dikit. Ramah untuk non-coder.
 
 ---
 
-## 📑 Table of Contents
+## 📑 Daftar Isi
 
-- [🚀 Quick Restore](#-quick-restore)
-- [📁 Understanding the Structure](#-understanding-the-structure)
-- [🤖 Hermes Agent CLI](#-hermes-agent-cli)
-- [⏰ Cron Job Management](#-cron-job-management)
-- [📡 Server Watchdog (Monitor)](#-server-watchdog-monitor)
-- [💰 Income Pipeline](#-income-pipeline)
-- [👻 Ghost Framework (Account Creator)](#-ghost-framework-account-creator)
-- [🌐 Proxy Management](#-proxy-management)
-- [🔧 Tool Reference](#-tool-reference)
-- [🐛 Troubleshooting](#-troubleshooting)
+- [Cara Install](#-cara-install)
+- [Struktur Folder](#-struktur-folder)
+- [12 Cron Jobs](#-12-cron-jobs)
+- [Tools & Dependencies](#-tools--dependencies)
+- [Verification Checklist](#-verification-checklist)
+- [Troubleshooting](#-troubleshooting)
 
 ---
 
-## 🚀 Quick Restore
+## 🚀 Cara Install
 
-### On a Fresh VPS (Ubuntu 22.04+)
+### Step-by-step dari VPS baru
 
 ```bash
-# 1. Clone
+# 1. Clone repo
 git clone https://github.com/leonidastcejorp/flowcore-vps.git
 cd flowcore-vps
 
-# 2. Run automatic restore (installs EVERYTHING)
-chmod +x setup.sh
-sudo ./setup.sh
+# 2. Cek kondisi VPS — HARUS jalanin ini dulu!
+bash pre-flight.sh
+```
 
-# 3. Update API keys
-nano ~/.hermes/config.yaml
-# → Replace YOUR_*_HERE with your real keys
+**Output pre-flight.sh:**
+```json
+{"os": {"version": "24.04", "codename": "noble"},
+ "apt_locked": false,
+ "bg_updates": false,
+ "ram_mb": 1800,
+ "disk_mb": 35000,
+ "internet": true,
+ "status": "ready"}
+```
 
-# 4. Verify everything
-hermes status
+Kalo status **"blocked"**, jangan lanjut — cek Troubleshooting bagian A dulu.
 
-# 5. Reboot (recommended)
+```bash
+# 3. Kalo status "ready", jalanin setup
+bash setup.sh
+# ~10-15 menit, no interaction needed
+```
+
+**Yang diinstall setup.sh:**
+
+| Step | Apa | Waktu |
+|------|-----|-------|
+| 1 | System packages (git, curl, python3, build-essential) | ~2 menit |
+| 2 | Python venv + Hermes Agent v0.16.0 | ~1 menit |
+| 3 | Hermes config, SOUL.md, plugins | 5 detik |
+| 4 | SSH keys | 2 detik |
+| 5 | Go tools (nuclei, subfinder, httpx) — atau fallback binary | ~3 menit |
+| 6 | Playwright + Chromium | ~2 menit |
+| 7 | FlowCore toolkit | 5 detik |
+| 8 | Security tools (fail2ban, lynis, rkhunter, clamav) | ~3 menit |
+| 9 | System tweaks (swappiness, DNS, journal limits) | 10 detik |
+| 10 | **Reboot prompt** | — |
+
+```bash
+# 4. Setup selesai — isi API key
+# Edit ~/.hermes/config.yaml atau ~/.hermes/.env
+# Yang WAJIB: model.api_key (provider LLM)
+# Optional: Telegram bot token, TTS keys, dll.
+
+# 5. Deploy 12 cron jobs
+bash deploy-cron.sh
+
+# 6. Reboot
 sudo reboot
 ```
 
-### What setup.sh Does Automatically
+### Support Ubuntu 22.04 & 24.04
 
-| Step | What | Time |
-|------|------|------|
-| 1 | System packages (git, curl, python3, build-essential, etc.) | ~2 min |
-| 2 | Python venv + Hermes Agent install | ~1 min |
-| 3 | Hermes config, SOUL.md, plugins | 5 sec |
-| 4 | SSH keys restore | 2 sec |
-| 5 | Go tools (nuclei, subfinder, httpx) | ~3 min |
-| 6 | Playwright + Chromium | ~2 min |
-| 7 | FlowCore toolkit as editable package | 5 sec |
-| 8 | WireGuard (optional, skips if no .conf) | 2 sec |
-| 9 | Cron jobs + systemd journal limits | 10 sec |
-| 10 | Reboot prompt | — |
+| OS | Kernel | Catatan |
+|----|--------|---------|
+| **Ubuntu 22.04 LTS** | 5.15+ | Tested fully. Package names: `python3-pip`, `chromium-browser` |
+| **Ubuntu 24.04 LTS** | 6.8+ | Tested. Package names beda dikit — setup.sh auto-detect. `python3-pip` → `python3-pip` (sama) |
 
-**Total: ~10 minutes, zero interaction needed.**
+Bedanya: Ubuntu 24.04 punya package names lebih baru untuk beberapa tool (e.g., `chromium` instead of `chromium-browser`). Setup.sh otomatis detek dari `/etc/os-release` dan pilih package names yang cocok.
 
 ---
 
-## 📁 Understanding the Structure
+## 📁 Struktur Folder
 
 ```
-~/.hermes/                    # Hermes Agent home
-├── config.yaml               # 🔑 API keys, model, provider settings
-├── SOUL.md                   # Agent personality (BREACH v3.0)
-├── state.db                  # Session database
-├── profiles/default/         # Active profile
-├── scripts/                  # Cron & utility scripts
-│   ├── monitor.py            # 📡 System watchdog
-│   ├── income_pipeline.py    # 💰 Income scraper
-│   ├── proxy_updater.py      # 🔄 Proxy refresh
-│   ├── daily_report.py       # 📊 Daily briefing
-│   └── prune.sh              # 🧹 Session cleanup
-├── plugins/rtk-rewrite/      # RTK token-saving plugin
-└── cron/jobs.json            # Scheduled jobs
-```
-
----
-
-## 🤖 Hermes Agent CLI
-
-### Basic Commands
-
-```bash
-# Check status
-hermes status
-
-# Start/Stop
-hermes start
-hermes stop
-
-# Run a one-off task
-hermes run "scan 10 subdomains of example.com"
-
-# View logs
-journalctl -u hermes -n 50 --no-pager
-```
-
-### Configuration
-
-```bash
-# Edit config
-hermes config edit
-
-# Set model
-hermes config set model "deepseek/deepseek-v4-flash"
-
-# Set provider
-hermes config set provider "openrouter"
-
-# List tools
-hermes tools
+flowcore-vps/
+├── README.md                   # This file — quick start
+├── INVENTORY.md                # Complete file manifest
+├── TUTORIAL.md                 # This file — usage guide
+├── setup.sh                    # Main setup script
+├── pre-flight.sh               # Pre-flight check (jalanin SEBELUM setup)
+├── deploy-cron.sh              # Deploy 12 cron jobs
+├── CONFIG_REFERENCE.md         # Config.yaml reference lengkap
+├── SUMMARY.md                  # Tools & dependencies reference
+│
+├── hermes/                     # Hermes Agent
+│   ├── config.yaml             #   Main config (API keys redacted)
+│   ├── SOUL.md                 #   BREACH v3.0 personality
+│   ├── SOUL.backup.md          #   Default personality backup
+│   ├── state.db                #   State database (5.4 MB)
+│   ├── scripts/                #   ⭐ 15 scripts
+│   │   ├── monitor.py          #     🚨 FBI Watchdog
+│   │   ├── daily_report.py     #     📊 Daily Briefing
+│   │   ├── income_pipeline.py  #     💰 CuanFeed
+│   │   ├── proxy_updater.py    #     🔁 Proxy Pool
+│   │   ├── prune.sh            #     🧹 Session Prune
+│   │   ├── context_monitor.py  #     📈 LogDesk
+│   │   ├── disk_alert.sh       #     💾 DiskBay
+│   │   ├── error_summary.py    #     📋 Briefing
+│   │   ├── memory_monitor.py   #     📈 MemStat
+│   │   ├── ssh_attack_monitor.py #   🚪 PortGuard
+│   │   ├── reboot_monitor.py   #     🔁 Bootmark
+│   │   ├── vps_backup.sh       #     📦 Backup
+│   │   └── lib/                #     Library
+│   │       ├── error_log.py    #       Error logging (Python)
+│   │       └── error_log.sh    #       Error logging (Shell)
+│   ├── plugins/rtk-rewrite/    #   RTK command rewrite plugin
+│   │   ├── __init__.py
+│   │   └── plugin.yaml
+│   └── cron/jobs.json          #   Cron job definitions (5→12 jobs)
+│
+├── ssh/                        # SSH keys
+│   ├── id_ed25519              #   🔴 PRIVATE KEY
+│   └── id_ed25519.pub          #   Public key
+│
+├── tools/                      # Standalone tools & frameworks
+│   ├── flowcore/               #   Full FlowCore toolkit (20 files)
+│   ├── ghost_creator.py        #   🔥 Mass account creator
+│   ├── ghost_tester.py         #   🔥 Turnstile bypass tester
+│   ├── income_pipeline.py      #   💰 Income scraper
+│   ├── farming_guide.py        #   🌐 Airdrop guide
+│   ├── airdrop_monitor.py      #   📡 Airdrop monitor
+│   └── README.md               #   Tools documentation
+│
+└── data/
+    └── subdomains_raw.txt      #   Bug bounty subdomains
 ```
 
 ---
 
-## ⏰ Cron Job Management
+## ⏰ 12 Cron Jobs
 
-### Active Jobs (from backup)
+Semua scripts pake **NO-AGENT mode** — gak pake LLM, langsung execute. Hemat token.
 
-| Job | Schedule | Description |
-|-----|----------|-------------|
-| 📡 Surveillance Report | Every 6h | Server health + token usage |
-| 🧹 Session Prune | Monday 3am | Cleans old sessions >30 days |
-| 💰 Income Pipeline | Every 6h | Scrapes freelance + airdrops |
+| # | Nama Job | Nickname | Script | Schedule | Deliver |
+|---|----------|----------|--------|----------|---------|
+| 1 | 🚨 FBI Watchdog | — | `monitor.py` | every 360m | Telegram |
+| 2 | 📊 FBI Daily Briefing | — | `daily_report.py` | 0 16 * * * | Telegram |
+| 3 | 🧹 Hermes Session Prune | — | `prune.sh` | 0 3 * * 1 | Local |
+| 4 | 💰 Income Pipeline | CuanFeed | `income_pipeline.py` | every 360m | Telegram |
+| 5 | 🔁 Proxy Auto-Updater | — | `proxy_updater.py` | every 360m | Local |
+| 6 | 📦 VPS Weekly Backup | Backup | `vps_backup.sh` | 0 2 * * 0 | Local |
+| 7 | 💾 Disk Usage Watchdog | DiskBay | `disk_alert.sh` | every 360m | Telegram |
+| 8 | 📈 Context Monitor | LogDesk | `context_monitor.py` | every 60m | Telegram |
+| 9 | 🚪 SSH Attack Monitor | PortGuard | `ssh_attack_monitor.py` | every 360m | Telegram |
+| 10 | 🔁 Reboot Monitor | Bootmark | `reboot_monitor.py` | every 15m | Telegram |
+| 11 | 📈 Memory Pressure | MemStat | `memory_monitor.py` | every 60m | Telegram |
+| 12 | 📋 Error Log Summary | Briefing | `error_summary.py` | every 360m | Telegram |
 
-### Manage with Hermes
+**Delivery details:**
+- **Telegram group** (8 jobs): Kantor FBI `-1003534226714`
+- **Local** (3 jobs): Hasil cuma disimpan lokal, gak dikirim kemana-mana
+- **Briefing** (1 job): Error summary, dikirim ke Telegram
+
+### Deploy cron jobs
 
 ```bash
-# List all jobs
+# Sekali jalan — idempotent, aman dijalanin ulang
+bash deploy-cron.sh
+
+# Manual: check status
 hermes cron list
-
-# Run a job immediately
 hermes cron run <job-id>
-
-# Pause/Resume
-hermes cron pause <job-id>
-hermes cron resume <job-id>
-
-# Remove
-hermes cron remove <job-id>
 ```
 
-### Manual Crontab
+### Cron schedule reference
 
-```bash
-# Edit system crontab
-crontab -e
-
-# View current cron jobs
-crontab -l
-```
+| Schedule | Arti |
+|----------|------|
+| `every 15m` | Tiap 15 menit |
+| `every 60m` | Tiap 1 jam |
+| `every 360m` | Tiap 6 jam |
+| `0 16 * * *` | Setiap hari jam 16:00 UTC |
+| `0 3 * * 1` | Setiap Senin jam 03:00 UTC |
+| `0 2 * * 0` | Setiap Minggu jam 02:00 UTC |
 
 ---
 
-## 📡 Server Watchdog (Monitor)
+## 🛠️ Tools & Dependencies
 
-The monitor script runs every 6 hours and sends alerts to your Telegram.
+### System Tools
 
-### What It Checks
+| Tool | Version | Install |
+|------|---------|---------|
+| Hermes Agent | v0.16.0 | `curl -fsSL https://hermes-agent.nousresearch.com/install.sh \| bash` |
+| Python 3 | ≥ 3.10 | `apt install python3 python3-pip python3-venv` |
+| Go | ≥ 1.21 | `wget https://go.dev/dl/go1.22.2.linux-amd64.tar.gz && tar -C /usr/local -xzf go*.tar.gz` |
+| Node.js | ≥ 20 LTS | Via NVM: `nvm install --lts` |
+| Playwright | ≥ 1.40 | `pip install playwright && playwright install chromium` |
+| Chromium | ≥ 120 | `apt install chromium-browser` |
+| fail2ban | ≥ 0.11 | `apt install fail2ban` |
+| lynis | ≥ 3.0 | `apt install lynis` |
+| rkhunter | ≥ 1.4 | `apt install rkhunter` |
+| ClamAV | ≥ 0.103 | `apt install clamav clamav-daemon` |
 
-| Metric | 🟢 Healthy | 🟡 Warning | 🔴 Critical | 💀 Danger |
-|--------|------------|------------|-------------|-----------|
-| **RAM** | < 70% | 70-82% | 82-92% | > 92% |
-| **Disk** | < 78% | 78-88% | 88-93% | > 93% |
-| **CPU Load** | < 1.4 | 1.4-2.0 | 2.0-3.0 | > 3.0 |
+### Security Tools (Go-based)
 
-### Run Manually
+| Tool | Install |
+|------|---------|
+| nuclei | `go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest` |
+| subfinder | `go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest` |
+| httpx | `go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest` |
 
-```bash
-cd /root/flowcore-vps
-python3 -m hermes.scripts.monitor
-```
+**Fallback:** Kalo `go install` gagal, setup.sh otomatis download pre-built binary dari GitHub releases.
 
-### What It Reports
+### Python Packages
 
-- ✅ Hardware health (RAM, CPU, Disk, uptime)
-- 📊 Token usage from Hermes state.db
-- 💰 RTK token savings (if plugin active)
-- 🔄 Daily backup status
-- ⚠️ Recent errors from journald
-- 🎯 Recommendations if thresholds exceeded
-
----
-
-## 💰 Income Pipeline
-
-### What It Does
-
-Scrapes **freelance gigs + airdrop opportunities** every 6 hours and delivers them to your Telegram.
-
-### Available Sources
-
-| Source | Type | Status |
-|--------|------|--------|
-| Upwork | Freelance | 🟢 Active |
-| Freelancer | Freelance | 🟢 Active |
-| PeoplePerHour | Freelance | 🟢 Active |
-| Testnet Faucets | Airdrop | 🟢 Active |
-| DropsTab | Airdrop | 🟢 Active |
-| QuestN | Airdrop | 🟢 Active |
-
-### Run Manually
-
-```bash
-cd /root/flowcore-vps
-python3 -m hermes.scripts.income_pipeline
-```
-
-### Change Frequency
-
-```bash
-# Edit cron schedule
-hermes cron update <pipeline-job-id> --schedule "every 3h"
-```
-
-### Farming Guide
-
-```bash
-# View airdrop farming strategies
-cd /root/flowcore-vps/tools
-python3 farming_guide.py --help
-```
+| Package | Guna |
+|---------|------|
+| `playwright` | Browser automation |
+| `requests` / `httpx` | HTTP calls |
+| `psutil` | System monitoring |
+| `python-dotenv` | .env loading |
+| `rich` | Pretty CLI output |
 
 ---
 
-## 👻 Ghost Framework (Account Creator)
+## ✅ Verification Checklist
 
-### Mass Account Creator
+Jalanin ini abis setup buat verifikasi semuanya oke:
 
-```bash
-cd /root/flowcore-vps/tools
-
-# Discord accounts (works from VPS!)
-python3 ghost_creator.py --platform discord --count 10 --output accounts.json
-
-# Fiverr/Reddit (needs clean proxy)
-python3 ghost_creator.py --platform fiverr --proxy socks5://user:pass@ip:port
-
-# Test Turnstile bypass
-python3 ghost_tester.py --url "https://example.com/login" --headless
-```
-
-### Limitations
-
-| Platform | From VPS | From Home IP | Notes |
-|----------|----------|--------------|-------|
-| Discord | ✅ Works | ✅ | No captcha |
-| Fiverr | ❌ Blocked | ✅ Works | Needs Turnstile bypass |
-| Reddit | ❌ Blocked | ⚠️ Tricky | Needs phone verify |
-| Gmail | ❌ Blocked | ⚠️ Tricky | SMS verification |
-
-> **Tip**: Save accounts to `data/` directory for organized storage:
-> ```bash
-> python3 ghost_creator.py --platform discord --output data/discord_accounts_$(date +%Y%m%d).json
-> ```
-
----
-
-## 🌐 Proxy Management
-
-### Auto-Updater
-
-```bash
-# Run once
-python3 proxy_updater.py
-
-# Check current proxy pool
-ls -la ~/.flowcore/proxies/
-cat ~/.flowcore/proxies/http.txt | wc -l
-```
-
-### Proxy Sources
-
-The tool automatically fetches from 4 public proxy lists:
-- `databay-labs` (HTTP + SOCKS5)
-- `r00tee` (HTTPS + SOCKS5)
-- **~17,000 proxies** checked → typically ~5-50 alive
-
-### Testing Proxies
-
-```bash
-# Test a specific proxy
-curl -x http://1.2.3.4:8080 -s -o /dev/null -w "%{http_code}" https://api.ipify.org
-
-# Test multiple
-while read proxy; do
-  if curl -x "http://$proxy" -s -m 5 -o /dev/null -w "%{http_code}" https://api.ipify.org | grep -q 200; then
-    echo "$proxy ✅"
-  fi
-done < ~/.flowcore/proxies/http.txt
-```
-
----
-
-## 🔧 Tool Reference
-
-### FlowCore Framework
-
-```bash
-cd /root/flowcore-vps/tools/flowcore
-
-# Browser automation
-python3 -m flowcore.core.browser --url "https://example.com"
-
-# Web scraper
-python3 -m flowcore.modules.scraper --url "https://target.com" --output data/scraped.json
-
-# Form automation (registrar)
-python3 -m flowcore.modules.registrar --platform discord
-
-# Monitor dashboard
-python3 -m flowcore.modules.watcher --daemon
-
-# Refresh proxies
-python3 -m flowcore.utils.network --refresh --test
-
-# Generate identity
-python3 -m flowcore.utils.names --count 10 --format json
-```
-
-### Security Tools
-
-```bash
-# Subdomain enumeration
-subfinder -d example.com -all -o /tmp/subs.txt
-
-# Web probing
-httpx -l /tmp/subs.txt -status-code -title -tech-detect
-
-# Vulnerability scanning
-nuclei -l /tmp/subs.txt -severity critical,high -o /tmp/critical.txt
-
-# Full pipeline (one-liner)
-subfinder -d example.com -silent | httpx -silent | nuclei -severity critical,high
-```
-
-### Ghost Tools
-
-```bash
-cd /root/flowcore-vps/tools
-
-python3 ghost_creator.py --help      # Account creator
-python3 ghost_tester.py --help       # Bypass tester
-python3 airdrop_monitor.py --help    # Airdrop monitoring
-python3 farming_guide.py             # Airdrop strategies
-```
-
-### Monitoring
-
-```bash
-cd /root/flowcore-vps/tools
-
-python3 income_pipeline.py           # Run income pipeline
-python3 proxy_updater.py             # Refresh proxies
-python3 daily_report.py              # Manual daily report
-```
+- [ ] **Git clone** — `git status` shows clean working tree
+- [ ] **Hermes** — `hermes status` atau `hermes --version` → v0.16.0
+- [ ] **Cron** — `hermes cron list` shows 12 jobs
+- [ ] **API Keys** — Terisi di `~/.hermes/config.yaml` atau `.env`
+- [ ] **Monitor** — `python3 ~/.hermes/scripts/monitor.py` runs without error
+- [ ] **Playwright** — `playwright install --with-deps chromium`
+- [ ] **Nuclei** — `nuclei -version` ≥ 3.x
+- [ ] **Subfinder** — `subfinder -version`
+- [ ] **HTTPx** — `httpx -version`
+- [ ] **fail2ban** — `sudo fail2ban-client status`
+- [ ] **SSH Key** — `chmod 600 ~/.ssh/id_ed25519`
+- [ ] **Disk** — `df -h` shows reasonable usage
+- [ ] **Telegram** — Cek grup Kantor FBI, ada notifikasi masuk
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Hermes Won't Start
+### A. ERROR GIT CLONE — Background update blocking
 
+**Masalah:** Waktu `git clone`, keluar error kayak "Could not lock file" atau "waiting for apt". Biasanya gara-gara VPS lagi jalanin background update (unattended-upgrades).
+
+**Solusi #1 (paling gampang):** Jalanin `bash pre-flight.sh` dulu. Dia bakal detek kalo ada proses apt berjalan.
+
+**Solusi #2 (manual):**
 ```bash
-# Check config syntax
-hermes config validate
-
-# Check logs
-journalctl -u hermes --since "5 minutes ago" --no-pager
-
-# Common fix: reinstall
-pip install --upgrade hermes-agent
-
-# Reset config
-hermes config init
+ps aux | grep apt
+# Kalo ada proses apt, tunggu sampe selesai (5-15 menit)
 ```
 
-### Playwright Fails
-
+**Solusi #3 (force stop kalo macet):**
 ```bash
-# Reinstall Chromium
-playwright install --with-deps chromium
-
-# Check deps
-ldd $(which chromium) | grep "not found"
-
-# Force reinstall
-playwright uninstall chromium
-playwright install chromium
+sudo killall apt-get
+sudo killall dpkg
+# Then cleanup:
+sudo rm -f /var/lib/dpkg/lock-frontend
+sudo rm -f /var/lib/apt/lists/lock
+sudo rm -f /var/cache/apt/archives/lock
+sudo dpkg --configure -a
 ```
 
-### Git Push Fails
+### B. ERROR "sys not defined" — income_pipeline.py
 
-```bash
-# Check SSH key
-ssh -T git@github.com
-# Expected: "Hi leonidastcejorp! You've successfully authenticated"
-
-# Re-add SSH key
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
-cat ~/.ssh/id_ed25519.pub  # → Add to GitHub Settings → SSH Keys
-
-# Test again
-ssh -T git@github.com
+**Masalah:** Script `income_pipeline.py` pake `sys.path.insert(...)` tapi lupa `import sys`. Error:
+```
+NameError: name 'sys' is not defined
 ```
 
-### Go Tools Not Installed
-
+**Solusi:** Udah di-fix di repo. Kalo masih muncul di cron, update script:
 ```bash
-# Install manually
-go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
-go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
-go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
-
-# Restart shell
-exec $SHELL
+# Fix: tambahin "import sys" di baris 1
+sed -i '1iimport sys' ~/.hermes/scripts/income_pipeline.py
 ```
 
-### Cron Jobs Not Running
-
+Atau re-deploy cron job:
 ```bash
-# Check cron status
-systemctl status cron
-
-# Check crontab
-crontab -l
-
-# Enable cron
-sudo systemctl enable --now cron
-
-# Check cron logs
-grep -i "hermes\|pipeline\|monitor\|airdrop" /var/log/syslog | tail -20
+hermes cron remove <job-id-pipeline>
+bash deploy-cron.sh  # auto-skip yg udah ada
 ```
 
-### "IP Blocked" / 403 Errors
+### C. OS Version Error — Ubuntu 22 vs 24
 
+**Masalah:** Ubuntu 22.04 dan 24.04 punya package names beda. Contoh: `chromium-browser` di 22.04 jadi `chromium` di 24.04.
+
+**Solusi:** Udah di-fix. `setup.sh` otomatis detek OS version dari `/etc/os-release` dan pilih package names yang cocok. Gak perlu manual.
+
+Kalo penasaran, liat di setup.sh bagian:
 ```bash
-# Check current IP
-curl -s https://api.ipify.org
-
-# Use proxy with tool
-python3 ghost_creator.py --platform fiverr --proxy socks5://proxy:1080
-
-# Or use a different approach: run from home IP / home server
+if [[ "$OS_VERSION" == "24.04" ]]; then
+    PKG_CHROMIUM="chromium"
+else
+    PKG_CHROMIUM="chromium-browser"
+fi
 ```
 
-### Out of Disk Space
+### D. Hermes Gak Keinstall
+
+**Masalah:** setup.sh gagal install Hermes Agent, biasanya karena network issue atau curl error.
+
+**Solusi — install manual:**
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+```
+
+**Atau kalo mau specific version:**
+```bash
+pip install hermes-agent==0.16.0
+```
+
+**Verify:**
+```bash
+hermes --version
+# → hermes version 0.16.0
+```
+
+### E. Go Tools Error — Install Gagal
+
+**Masalah:** `go install` buat nuclei/subfinder/httpx gagal — biasanya karena Go version terlalu tua, network blocked, atau memory kurang.
+
+**Solusi:** setup.sh otomatis fallback ke pre-built binary dari GitHub releases:
+- nuclei: `github.com/projectdiscovery/nuclei/releases`
+- subfinder: `github.com/projectdiscovery/subfinder/releases`
+- httpx: `github.com/projectdiscovery/httpx/releases`
+
+**Manual:**
+```bash
+# Contoh download nuclei binary langsung
+wget https://github.com/projectdiscovery/nuclei/releases/latest/download/nuclei_3.x.x_linux_amd64.zip
+unzip nuclei_*.zip
+sudo mv nuclei /usr/local/bin/
+```
+
+### F. Deploy-cron Gagal — Hermes Belum Running
+
+**Masalah:** `bash deploy-cron.sh` error: "Hermes CLI not found".
+
+**Solusi:** Install Hermes dulu:
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+# or
+pip install hermes-agent
+```
+
+### G. Telegram Bot Gak Kirim Notifikasi
+
+**Masalah:** Cron jobs jalan tapi gak ada notifikasi di Telegram.
+
+**Cek:**
+```bash
+# 1. Apakah Telegram bot token sudah diisi?
+grep -i telegram ~/.hermes/config.yaml
+
+# 2. Cek cron job status
+hermes cron list | grep -i telegram
+
+# 3. Cek log
+journalctl -u hermes --since "1 hour ago" --no-pager | grep -i deliver
+```
+
+**Solusi:** Pastiin Telegram bot token udah diisi di `~/.hermes/.env`:
+```
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+```
+
+### H. VPS Lemot Abis Install
+
+**Masalah:** Abis jalanin setup.sh, VPS terasa lambat.
+
+**Penyebab:** ClamAV lagi scan, atau background processes.
+```bash
+# Cek beban
+htop
+# atau
+top
+
+# Pause ClamAV kalo perlu
+sudo systemctl stop clamav-daemon
+
+# Cek swap usage
+free -h
+```
+
+### I. Cron Jobs Gak Jalan (Hermes Cron Issue)
+
+**Masalah:** `hermes cron list` nunjukin jobs tapi gak ada yang execute.
 
 ```bash
-# Check usage
-df -h
+# 1. Cek hermes daemon jalan
+systemctl status hermes
 
-# Clean journal logs
-sudo journalctl --vacuum-time=3d
+# 2. Restart kalo perlu
+sudo systemctl restart hermes
 
-# Clean pip cache
-pip cache purge
+# 3. Cek cron scheduler
+hermes cron list --verbose
 
-# Remove old sessions
-find ~/.hermes/sessions/ -mtime +30 -delete
-
-# Remove apt cache
-sudo apt clean
+# 4. Test manual satu job
+hermes cron run <job-id>
 ```
 
 ---
 
-## 🔐 Post-Restore Checklist
+## 💡 Tips
 
-- [ ] **API Keys** — Updated in `~/.hermes/config.yaml`
-- [ ] **SSH Key** — `chmod 600 ~/.ssh/id_ed25519`
-- [ ] **Hermes** — `hermes status` shows "running"
-- [ ] **Playwright** — `playwright install --with-deps chromium`
-- [ ] **Go Tools** — `nuclei -version` ≥ 3.x
-- [ ] **Cron** — `hermes cron list` shows all 3 jobs
-- [ ] **Monitor** — Runs without errors: `python3 -m hermes.scripts.monitor`
-- [ ] **Backup** — `git status` shows clean working tree
-
----
-
-## 💡 Pro Tips
-
-| Tip | Details |
-|-----|---------|
-| **Save tokens** | RTK plugin auto-rewrites commands — saves 60-90% tokens |
-| **Keep backup fresh** | Run `./setup.sh --backup-only` weekly |
-| **Monitor alerts** | Go to Telegram → Kantor FBI → Surveillance topic |
-| **Multiple profiles** | `hermes config set profile work` to switch agent personalities |
-| **Auto-recovery** | Cron monitor auto-restarts Hermes if it crashes |
-| **Session search** | `hermes session search "keywords"` finds past conversations |
+| Tip | Detail |
+|-----|--------|
+| **Simpan token** | Semua cron NO-AGENT — gak pake LLM, hampir gratis |
+| **Monitor Telegram** | Join grup Kantor FBI untuk alert real-time |
+| **Backup rutin** | Cron job #6 (VPS Weekly Backup) jalan tiap Minggu |
+| **SSH monitoring** | PortGuard (#9) lapor kalo ada brute-force attempt |
+| **Disk alert** | DiskBay (#7) silent kalo aman, baru notif kalo >80% |
+| **Bootmark** | (#10) tiap 15 menit detek kalo VPS restart mendadak |
+| **Multiple profiles** | `hermes --profile <nama>` untuk personality beda |
 
 ---
 
-*Generated with Hermes Agent · Part of the FlowCore Ecosystem*
+*Hermes Agent v0.16.0 · Model: deepseek/deepseek-v4-flash · FlowCore VPS Backup*
